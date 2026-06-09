@@ -7,7 +7,6 @@ import (
     "rent/internal/models"
     api_scripts "rent/internal/api/scripts"
     "rent/internal/storage/repository"
-    "golang.org/x/crypto/bcrypt"
     "rent/internal/api/utils"
 )
 type UserController struct {
@@ -60,7 +59,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
         return
     }
 
-    hashed, err := bcrypt.GenerateFromPassword([]byte(requestBody.Password), bcrypt.DefaultCost)
+    hashed, err := utils.HashPassword(requestBody.Password)
     if err != nil {
         api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка хеширования пароля")
         return
@@ -68,7 +67,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 
     user := &models.User{
 		Name:     requestBody.Name,
-		Password: string(hashed),
+		Password: hashed,
         Email:    requestBody.Email,
     }
 
@@ -108,7 +107,7 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
         return
     }
 
-    err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(requestBody.Password))
+    err = utils.CheckPassword(requestBody.Password, user.Password)
     if err != nil {
         api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный пароль")
         return
