@@ -8,6 +8,7 @@ import (
     api_scripts "rent/internal/api/scripts"
     "rent/internal/storage/repository"
     "golang.org/x/crypto/bcrypt"
+    "rent/internal/api/utils"
 )
 type UserController struct {
 	Rep *repository.UserRepository
@@ -109,26 +110,18 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
 
     err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(requestBody.Password))
     if err != nil {
-        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный email или пароль")
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный пароль")
         return
     }
 
-    // token, err := generateJWT(user.ID, user.Email)  // эту функцию нужно написать
-    // if err != nil {
-    //     api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка генерации токена")
-    //     return
-    // }
+    token, err := utils.GenerateJWT(user.ID, user.Email)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка генерации токена")
+        return
+    }
 
-    // api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
-    //     "token": token,
-    //     "user": map[string]interface{}{
-    //         "id":    user.ID,
-    //         "email": user.Email,
-    //         "name":  user.Name,
-    //     },
-    // })
-
-    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{} {
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "token": token,
         "user": map[string]interface{}{
             "id":    user.ID,
             "email": user.Email,
