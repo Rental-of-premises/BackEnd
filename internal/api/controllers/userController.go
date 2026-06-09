@@ -48,8 +48,15 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
         return
     }
 
-    if requestBody.Email == "" || requestBody.Password == "" {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Email и пароль обязательны")
+    mes := utils.ValidateEmail(requestBody.Email)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+
+    mes = utils.ValidatePassword(requestBody.Password)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
         return
     }
 
@@ -96,8 +103,15 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
         return
     }
 
-    if requestBody.Email == "" || requestBody.Password == "" {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Email и пароль обязательны")
+    mes := utils.ValidateEmail(requestBody.Email)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+
+    mes = utils.ValidatePassword(requestBody.Password)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
         return
     }
 
