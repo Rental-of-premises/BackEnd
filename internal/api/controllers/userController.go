@@ -83,3 +83,57 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
         "name":  user.Name,
     })
 }
+
+func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
+    var requestBody struct {
+        Email    string `json:"email"`
+        Password string `json:"password"`
+    }
+
+    err := json.NewDecoder(req.Body).Decode(&requestBody)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
+        return
+    }
+
+    if requestBody.Email == "" || requestBody.Password == "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Email и пароль обязательны")
+        return
+    }
+
+    user, err := uc.Rep.GetByEmail(requestBody.Email)
+    if err != nil || user == nil {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Пользователь не существует")
+        return
+    }
+
+    err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(requestBody.Password))
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный email или пароль")
+        return
+    }
+
+    // token, err := generateJWT(user.ID, user.Email)  // эту функцию нужно написать
+    // if err != nil {
+    //     api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка генерации токена")
+    //     return
+    // }
+
+    // api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+    //     "token": token,
+    //     "user": map[string]interface{}{
+    //         "id":    user.ID,
+    //         "email": user.Email,
+    //         "name":  user.Name,
+    //     },
+    // })
+
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{} {
+        "user": map[string]interface{}{
+            "id":    user.ID,
+            "email": user.Email,
+            "name":  user.Name,
+        },
+    })
+
+}
