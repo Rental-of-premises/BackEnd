@@ -21,7 +21,9 @@ func CreateAndRunRoutes() {
 	})
 
 	userController := &api_controllers.UserController{repository.GetUserRepository()}
-	r.HandleFunc("/api/users/{id}", userController.GetUser).Methods("GET")
+
+	r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET") 
+	r.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST")
 
 	port := config.GetSingletonConfig().ServerPort
 	log.Printf("Server starting on port %s", port)

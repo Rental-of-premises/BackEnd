@@ -16,12 +16,12 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 
 func (r *UserRepository) Create(user *models.User) error {
 	query := `
-		INSERT INTO users (name, password, email, created_at)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO users (name, password, email)
+		VALUES ($1, $2, $3)
 		RETURNING id, created_at
 	`
 
-	err := r.Db.QueryRow(query, user.Name, user.Password, user.Email, user.CreatedAt).Scan(&user.ID, &user.CreatedAt)
+	err := r.Db.QueryRow(query, user.Name, user.Password, user.Email).Scan(&user.ID, &user.CreatedAt)
 
 	return err
 }
