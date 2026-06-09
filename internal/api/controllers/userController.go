@@ -7,7 +7,7 @@ import (
     "rent/internal/models"
     api_scripts "rent/internal/api/scripts"
     "rent/internal/storage/repository"
-    "golang.org/x/crypto/bcrypt"
+    "rent/internal/api/utils"
 )
 type UserController struct {
 	Rep *repository.UserRepository
@@ -48,8 +48,15 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
         return
     }
 
-    if requestBody.Email == "" || requestBody.Password == "" {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Email и пароль обязательны")
+    mes := utils.ValidateEmail(requestBody.Email)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+
+    mes = utils.ValidatePassword(requestBody.Password)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
         return
     }
 
@@ -59,7 +66,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
         return
     }
 
-    hashed, err := bcrypt.GenerateFromPassword([]byte(requestBody.Password), bcrypt.DefaultCost)
+    hashed, err := utils.HashPassword(requestBody.Password)
     if err != nil {
         api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка хеширования пароля")
         return
@@ -67,7 +74,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 
     user := &models.User{
 		Name:     requestBody.Name,
-		Password: string(hashed),
+		Password: hashed,
         Email:    requestBody.Email,
     }
 
@@ -82,4 +89,57 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
         "email": user.Email,
         "name":  user.Name,
     })
+}
+
+func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
+    var requestBody struct {
+        Email    string `json:"email"`
+        Password string `json:"password"`
+    }
+
+    err := json.NewDecoder(req.Body).Decode(&requestBody)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
+        return
+    }
+
+    mes := utils.ValidateEmail(requestBody.Email)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+
+    mes = utils.ValidatePassword(requestBody.Password)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+
+    user, err := uc.Rep.GetByEmail(requestBody.Email)
+    if err != nil || user == nil {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Пользователь не существует")
+        return
+    }
+
+    err = utils.CheckPassword(requestBody.Password, user.Password)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный пароль")
+        return
+    }
+
+    token, err := utils.GenerateJWT(user.ID, user.Email)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка генерации токена")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "token": token,
+        "user": map[string]interface{}{
+            "id":    user.ID,
+            "email": user.Email,
+            "name":  user.Name,
+        },
+    })
+
 }
