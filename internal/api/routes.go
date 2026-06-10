@@ -48,9 +48,10 @@ func CreateAndRunRoutes() {
     protected.Use(middleware.AuthMiddleware)
 
 	protected.HandleFunc("/auth/logout", userController.LogOut).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/auth/delete", userController.DeleteAccount).Methods("DELETE", "OPTIONS")
     //r.HandleFunc("/account/apartments", apartmentController.GetAllApartments).Methods("POST")
     //r.HandleFunc("/booking", bookingController.GetAllBookings).Methods("POST")
-	
+
 	port := config.GetSingletonConfig().ServerPort
 	log.Printf("Server starting on port %s", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), r))
