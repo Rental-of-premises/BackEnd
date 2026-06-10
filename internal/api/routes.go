@@ -9,11 +9,12 @@ import (
 	"rent/internal/storage/repository"
 
 	"github.com/gorilla/mux"
-	//"rent/internal/api/middleware"
+	"rent/internal/api/middleware"
 )
 
 func CreateAndRunRoutes() {
     r := mux.NewRouter()
+	r.Use(middleware.CORSMiddleware)
     r.Use(func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
             w.Header().Set("Content-Type", "application/json")
