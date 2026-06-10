@@ -45,7 +45,8 @@ func ParseJWT(tokenString string) (*Claims, error) {
 		if !ok {
             return nil, errors.New("unexpected signing method")
         }
-		return []byte(os.Getenv("JWT_SECRET")), nil
+        cnf := config.GetSingletonConfig()
+		return []byte(cnf.JWTSecret), nil
 	})
 
 	if err != nil {

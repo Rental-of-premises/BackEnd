@@ -15,8 +15,8 @@ const (
     UserEmailKey contextKey = "userEmail"
 )
 
-func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(res http.ResponseWriter, req *http.Request) {
+func AuthMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
         tokenString := utils.ExtractToken(req)
         if tokenString == "" {
             api_scripts.RespondError(res, http.StatusUnauthorized, "Отсутствует токен авторизации")
@@ -32,8 +32,8 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
         ctx := context.WithValue(req.Context(), UserIDKey, claims.ID)
         ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
         
-        next(res, req.WithContext(ctx))
-    }
+        next.ServeHTTP(res, req.WithContext(ctx))
+    })
 }
 
 func GetUserIDFromContext(req *http.Request) (int64, bool) {
