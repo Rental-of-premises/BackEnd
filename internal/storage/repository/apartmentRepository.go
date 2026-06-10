@@ -17,19 +17,18 @@ func NewApartmentRepository(db *sql.DB) *ApartmentRepository {
 
 func (r *ApartmentRepository) Create(apartment *models.Apartment) error {
 	query := `
-		INSERT INTO apartments (seller_id, name, description, capacity, price_per_hour, is_active, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO apartments (name, seller_id, description, capacity, price_per_hour, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, created_at
 	`
 
 	err := r.Db.QueryRow(query,
-		apartment.SellerID,
 		apartment.Name,
+		apartment.SellerID,
 		apartment.Description,
 		apartment.Capacity,
 		apartment.PricePerHour,
 		apartment.IsActive,
-		apartment.CreatedAt,
 	).Scan(&apartment.ID, &apartment.CreatedAt)
 
 	return err

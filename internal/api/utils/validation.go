@@ -50,7 +50,7 @@ func ValidatePassword(password string) (string) {
 	return ""
 }
 
-func ValidateRequired(fieldName, value string) (string) {
+func ValidateRequired(value string) (string) {
 	if value == "" {
 		return "Данное поле не должно быть пустым"
 	}

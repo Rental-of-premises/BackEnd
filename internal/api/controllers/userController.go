@@ -3,10 +3,9 @@ package api_controllers
 import (
     "encoding/json"
     "net/http"
-    "strconv"
     
     "rent/internal/models"
-    "github.com/gorilla/mux"
+    //"github.com/gorilla/mux"
     api_scripts "rent/internal/api/scripts"
     "rent/internal/storage/repository"
     "rent/internal/api/utils"
@@ -17,14 +16,12 @@ type UserController struct {
 }
 
 func (uc *UserController) GetUser(res http.ResponseWriter, req *http.Request) {
-    vars := mux.Vars(req)
-    idStr := vars["id"]
-    
-    id, err := strconv.ParseInt(idStr, 10, 64)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Invalid user ID")
-        return
-    }
+    id, err := api_scripts.ParseID(req)
+
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		return
+	}
     
     user, err := uc.Rep.GetByID(id)
     if err != nil {
@@ -91,8 +88,6 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 
     api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
         "id":    user.ID,
-        "email": user.Email,
-        "name":  user.Name,
     })
 }
 
