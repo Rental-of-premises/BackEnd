@@ -6,6 +6,7 @@ import (
 	"rent/internal/models"
 )
 
+
 type ApartmentRepository struct {
 	Db *sql.DB
 }
@@ -43,7 +44,7 @@ func (r *ApartmentRepository) GetByID(id int64) (*models.Apartment, error) {
 
 	var apartment models.Apartment
 	err := r.Db.QueryRow(query, id).Scan(
-		&apartment.ID,
+		&apartment.ID, 
 		&apartment.SellerID,
 		&apartment.Name,
 		&apartment.Description,
@@ -63,38 +64,44 @@ func (r *ApartmentRepository) GetByID(id int64) (*models.Apartment, error) {
 	return &apartment, nil
 }
 
-func (r *ApartmentRepository) GetAll(filter map[string]interface{}, limit, offset int) ([]*models.Apartment, error) {
+func (r *ApartmentRepository) GetAll(filter *models.ApartmentFilter) ([]*models.Apartment, error) {
 	query := `
 		SELECT id, seller_id, name, description, capacity, price_per_hour, is_active, created_at
 		FROM apartments
 		WHERE 1=1
 	`
+
+	limit := filter.Limit
+	offset := filter.Offset
 	var args []interface{}
 	argCounter := 1
 
-	if isActive, ok := filter["is_active"].(bool); ok {
-		query += fmt.Sprintf(" AND is_active = $%d", argCounter)
-		args = append(args, isActive)
-		argCounter++
-	}
-
-	if sellerID, ok := filter["seller_id"].(int64); ok {
-		query += fmt.Sprintf(" AND seller_id = $%d", argCounter)
-		args = append(args, sellerID)
-		argCounter++
-	}
-
-	if minPrice, ok := filter["min_price"].(int32); ok {
-		query += fmt.Sprintf(" AND price_per_hour >= $%d", argCounter)
-		args = append(args, minPrice)
-		argCounter++
-	}
-
-	if maxPrice, ok := filter["max_price"].(int32); ok {
-		query += fmt.Sprintf(" AND price_per_hour <= $%d", argCounter)
-		args = append(args, maxPrice)
-		argCounter++
-	}
+    if filter.IsActive != nil {
+        query += fmt.Sprintf(" AND is_active = $%d", argCounter)
+        args = append(args, *filter.IsActive)
+        argCounter++
+    }
+    
+    // SellerId - проверяем на nil
+    if filter.SellerId != nil {
+        query += fmt.Sprintf(" AND seller_id = $%d", argCounter)
+        args = append(args, *filter.SellerId)
+        argCounter++
+    }
+    
+    // MinPrice - проверяем на nil
+    if filter.MinPrice != nil {
+        query += fmt.Sprintf(" AND price_per_hour >= $%d", argCounter)
+        args = append(args, *filter.MinPrice)
+        argCounter++
+    }
+    
+    // MaxPrice - проверяем на nil
+    if filter.MaxPrice != nil {
+        query += fmt.Sprintf(" AND price_per_hour <= $%d", argCounter)
+        args = append(args, *filter.MaxPrice)
+        argCounter++
+    }
 
 	query += " ORDER BY id LIMIT $" + fmt.Sprintf("%d", argCounter) + " OFFSET $" + fmt.Sprintf("%d", argCounter+1)
 	args = append(args, limit, offset)

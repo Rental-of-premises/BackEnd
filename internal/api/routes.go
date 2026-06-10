@@ -21,10 +21,20 @@ func CreateAndRunRoutes() {
 	})
 
 	userController := &api_controllers.UserController{repository.GetUserRepository()}
-
-	r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET") 
-	r.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST")
+	r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET")
+  r.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST")
 	r.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST")
+
+	apartmentController := &api_controllers.ApartmentController{repository.GetApartmentRepository()}
+	r.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET")
+	r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("POST")
+	
+	// reviewController := &api_controllers.UserController{repository.GetUserRepository()}
+	// r.HandleFunc("/review/{id}", userController.GetUser).Methods("GET")
+	
+	bookingController := &api_controllers.BookingController{repository.GetBookingRepository()}
+	r.HandleFunc("/booking/{id}", bookingController.GetBooking).Methods("GET")
+	//r.HandleFunc("/booking", bookingController.GetAllBookings).Methods("POST")
 
 	port := config.GetSingletonConfig().ServerPort
 	log.Printf("Server starting on port %s", port)
