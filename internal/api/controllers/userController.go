@@ -137,6 +137,9 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
     })
 }
 
-// func (us *UserController) LogOut(res http.ResponseWriter, req *http.Reques) {
 
-// }
+func (uc *UserController) LogOut(res http.ResponseWriter, req *http.Request) {
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "message": "Успешный выход из системы",
+    })
+}
