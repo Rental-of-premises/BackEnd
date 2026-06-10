@@ -20,19 +20,27 @@ func CreateAndRunRoutes() {
             next.ServeHTTP(w, req)
         })
     })
-
-    userController := &api_controllers.UserController{repository.GetUserRepository()}
-
-    // ========== ПУБЛИЧНЫЕ МАРШРУТЫ (без токена) ==========
-    r.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST")
-    r.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST")
-	r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET")
+  
+	userController := &api_controllers.UserController{repository.GetUserRepository()}
+  apartmentController := &api_controllers.ApartmentController{repository.GetApartmentRepository()}
+  bookingController := &api_controllers.BookingController{repository.GetBookingRepository()}
+	
+  // ========== ПУБЛИЧНЫЕ МАРШРУТЫ (без токена) ==========
+  r.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST")
+  r.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST")
+  r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET")
+  r.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET")
+  r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("POST")
+	
+	// reviewController := &api_controllers.UserController{repository.GetUserRepository()}
+	// r.HandleFunc("/review/{id}", userController.GetUser).Methods("GET")
     
-    // ========== ЗАЩИЩЕННЫЙ МАРШРУТ (с проверкой токена) ==========
-    // Оборачиваем GetUser в AuthMiddleware
-   
+  r.HandleFunc("/booking/{id}", bookingController.GetBooking).Methods("GET")
+	//r.HandleFunc("/booking", bookingController.GetAllBookings).Methods("POST")
+  // ========== ЗАЩИЩЕННЫЙ МАРШРУТ (с проверкой токена) ==========
+  // Оборачиваем GetUser в AuthMiddleware
 
-    port := config.GetSingletonConfig().ServerPort
-    log.Printf("Server starting on port %s", port)
-    log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), r))
+	port := config.GetSingletonConfig().ServerPort
+	log.Printf("Server starting on port %s", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), r))
 }

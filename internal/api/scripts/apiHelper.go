@@ -6,6 +6,7 @@ import (
 	"net/http"
 	api_models "rent/internal/api/models"
 	"strconv"
+	models "rent/internal/models"
 
 	"github.com/gorilla/mux"
 )
@@ -28,3 +29,21 @@ func ParseID(r *http.Request) (int64, error) {
 	}
 	return id, nil
 }
+
+func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
+	var filter models.ApartmentFilter
+	if err := json.NewDecoder(r.Body).Decode(&filter); err != nil {
+		return nil, fmt.Errorf("invalid filter")
+	}
+	return &filter, nil
+}
+
+func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
+	var filter models.BookingFilter
+	if err := json.NewDecoder(r.Body).Decode(&filter); err != nil {
+		return nil, fmt.Errorf("invalid filter")
+	}
+
+	return &filter, nil
+}
+

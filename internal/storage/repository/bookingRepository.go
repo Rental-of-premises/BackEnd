@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"rent/internal/models"
 	"time"
+	"errors"
 )
 
 type BookingRepository struct {
@@ -32,6 +33,79 @@ func (r *BookingRepository) Create(booking *models.Booking) error {
 	).Scan(&booking.ID, &booking.CreatedAt)
 
 	return err
+}
+
+func (r *BookingRepository) GetAll(filter *models.BookingFilter) ([]*models.Booking, error) {
+	query := `
+        SELECT b.id, b.user_id, b.apartment_id, b.status, b.time_from, b.time_to, b.created_at
+        FROM booking b
+        INNER JOIN apartments a ON b.apartment_id = a.id
+        WHERE 1=1
+    `
+	if filter.Limit == nil || filter.Offset == nil {
+		return nil, errors.New("missing Limit or Offset in Json for pagination")
+	}
+	limit := filter.Limit
+	offset := filter.Offset
+
+	var args []interface{}
+	argCounter := 1
+
+    if filter.Status != nil {
+        query += fmt.Sprintf(" AND b.is_active = $%s", argCounter)
+        args = append(args, *filter.Status)
+        argCounter++
+    }
+    
+    // SellerId - проверяем на nil
+    if filter.SellerID != nil {
+        query += fmt.Sprintf(" AND a.seller_id = $%d", argCounter)
+        args = append(args, *filter.SellerID)
+        argCounter++
+    }
+    
+    // MinPrice - проверяем на nil
+    if filter.MinPrice != nil {
+        query += fmt.Sprintf(" AND price_per_hour *  EXTRACT(EPOCH FROM (b.time_to - b.time_from)) / 3600 >= $%d", argCounter)
+        args = append(args, *filter.MinPrice)
+        argCounter++
+    }
+    
+    // MaxPrice - проверяем на nil
+    if filter.MaxPrice != nil {
+        query += fmt.Sprintf(" AND price_per_hour *  EXTRACT(EPOCH FROM (b.time_to - b.time_from)) / 3600 <= $%d", argCounter)
+        args = append(args, *filter.MaxPrice)
+        argCounter++
+    }
+
+	query += " ORDER BY id LIMIT $" + fmt.Sprintf("%d", argCounter) + " OFFSET $" + fmt.Sprintf("%d", argCounter+1)
+	args = append(args, limit, offset)
+
+	rows, err := r.Db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var bookings []*models.Booking
+	for rows.Next() {
+		var booking models.Booking
+		err := rows.Scan(
+			&booking.ID,
+			&booking.UserID,
+			&booking.ApartmentID,
+			&booking.Status,
+			&booking.TimeFrom,
+			&booking.TimeTo,
+			&booking.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		bookings = append(bookings, &booking)
+	}
+
+	return bookings, rows.Err()
 }
 
 func (r *BookingRepository) GetByID(id int64) (*models.Booking, error) {

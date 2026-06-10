@@ -14,3 +14,11 @@ type Booking struct {
 	TimeTo      time.Time `json:"time_to"`
 }
 
+type BookingFilter struct {
+	Status   *string `json:"status"`
+	SellerID *int   `json:"seller_id"`
+    MinPrice *int  `json:"min_price"`
+    MaxPrice *int  `json:"max_price"`
+    Limit    *int   `json:"limit"`
+	Offset   *int   `json:"offset"` 
+}
