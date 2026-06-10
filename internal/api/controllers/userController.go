@@ -1,11 +1,14 @@
 package api_controllers
 
 import (
-	"net/http"
-	api_scripts "rent/internal/api/scripts"
-	"rent/internal/storage/repository"
+    "encoding/json"
+    "net/http"
+    
+    "rent/internal/models"
+    api_scripts "rent/internal/api/scripts"
+    "rent/internal/storage/repository"
+    "rent/internal/api/utils"
 )
-
 type UserController struct {
 	Rep *repository.UserRepository
 }
@@ -29,4 +32,114 @@ func (uc *UserController) GetUser(res http.ResponseWriter, req *http.Request) {
 	}
 
 	api_scripts.RespondJSON(res, http.StatusOK, user)
+}
+
+
+func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
+    var requestBody struct {
+        Email    string `json:"email"`
+        Password string `json:"password"`
+        Name     string `json:"name"`
+    }
+
+    err := json.NewDecoder(req.Body).Decode(&requestBody)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
+        return
+    }
+
+    mes := utils.ValidateEmail(requestBody.Email)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+
+    mes = utils.ValidatePassword(requestBody.Password)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+
+    existingUser, _ := uc.Rep.GetByEmail(requestBody.Email)
+    if existingUser != nil {
+        api_scripts.RespondError(res, http.StatusConflict, "Пользователь уже существует")
+        return
+    }
+
+    hashed, err := utils.HashPassword(requestBody.Password)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка хеширования пароля")
+        return
+    }
+
+    user := &models.User{
+		Name:     requestBody.Name,
+		Password: hashed,
+        Email:    requestBody.Email,
+    }
+
+    err = uc.Rep.Create(user)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка сохранения пользователя")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
+        "id":    user.ID,
+        "email": user.Email,
+        "name":  user.Name,
+    })
+}
+
+func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
+    var requestBody struct {
+        Email    string `json:"email"`
+        Password string `json:"password"`
+    }
+
+    err := json.NewDecoder(req.Body).Decode(&requestBody)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
+        return
+    }
+
+    mes := utils.ValidateEmail(requestBody.Email)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+
+    mes = utils.ValidatePassword(requestBody.Password)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+
+    user, err := uc.Rep.GetByEmail(requestBody.Email)
+    if err != nil || user == nil {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Пользователь не существует")
+        return
+    }
+
+    err = utils.CheckPassword(requestBody.Password, user.Password)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный пароль")
+        return
+    }
+
+    token, err := utils.GenerateJWT(user.ID, user.Email)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка генерации токена")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "token": token,
+        "user": map[string]interface{}{
+            "id":    user.ID,
+            "email": user.Email,
+            "name":  user.Name,
+        },
+    })
+
 }

@@ -21,7 +21,7 @@ func (r *UserRepository) Create(user *models.User) error {
 		RETURNING id, created_at
 	`
 
-	err := r.Db.QueryRow(query, user.Name, user.Password, user.Email, user.CreatedAt).Scan(&user.ID, &user.CreatedAt)
+	err := r.Db.QueryRow(query, user.Name, user.Password, user.Email).Scan(&user.ID, &user.CreatedAt)
 
 	return err
 }
