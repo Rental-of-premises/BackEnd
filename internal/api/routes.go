@@ -44,6 +44,11 @@ func CreateAndRunRoutes() {
 	// r.HandleFunc("/review/{id}", userController.GetUser).Methods("GET")
     // ========== ЗАЩИЩЕННЫЙ МАРШРУТ (с проверкой токена) ==========
     // Оборачиваем GetUser в AuthMiddleware
+	protected := r.PathPrefix("/api").Subrouter()
+    protected.Use(middleware.AuthMiddleware)
+
+	protected.HandleFunc("/auth/logout", userController.LogOut).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/auth/delete", userController.DeleteAccount).Methods("DELETE", "OPTIONS")
     //r.HandleFunc("/account/apartments", apartmentController.GetAllApartments).Methods("POST")
     //r.HandleFunc("/booking", bookingController.GetAllBookings).Methods("POST")
 
