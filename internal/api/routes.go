@@ -14,6 +14,7 @@ import (
 
 func CreateAndRunRoutes() {
     r := mux.NewRouter()
+	r.Use(middleware.CORSMiddleware)
     r.Use(func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
             w.Header().Set("Content-Type", "application/json")
@@ -22,26 +23,31 @@ func CreateAndRunRoutes() {
     })
   
 	userController := &api_controllers.UserController{repository.GetUserRepository()}
+
 	apartmentController := &api_controllers.ApartmentController{repository.GetApartmentRepository()}
 	bookingController := &api_controllers.BookingController{repository.GetBookingRepository()}
 	// reviewController := &api_controllers.UserController{repository.GetUserRepository()}
 		
 		// ========== ПУБЛИЧНЫЕ МАРШРУТЫ (без токена) ==========
 
-	r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET")
-	r.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST")
-	r.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST")
+	r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET", "OPTIONS")
+	r.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST", "OPTIONS")
+	r.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST", "OPTIONS")
 
-	r.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET")
-	r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("POST")
+	r.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET", "OPTIONS")
+	r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("POST", "OPTIONS")
 
-	r.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET")
+	r.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET", "OPTIONS")
 
   	// ========== ЗАЩИЩЕННЫЙ МАРШРУТ (с проверкой токена) ==========
 	protected := r.PathPrefix("/api").Subrouter()
-    protected.Use(middleware.AuthMiddleware)
-    protected.HandleFunc("/account/my-apartments", apartmentController.GetMyApartments).Methods("GET")
-    protected.HandleFunc("/account/new-apartments", apartmentController.CreateApartment).Methods("POST")
+  protected.Use(middleware.AuthMiddleware)
+  
+	protected.HandleFunc("/auth/logout", userController.LogOut).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/auth/delete", userController.DeleteAccount).Methods("DELETE", "OPTIONS")
+  
+  protected.HandleFunc("/account/my-apartments", apartmentController.GetMyApartments).Methods("GET", "OPTIONS")
+  protected.HandleFunc("/account/new-apartments", apartmentController.CreateApartment).Methods("POST", "OPTIONS")
 
 	port := config.GetSingletonConfig().ServerPort
 	log.Printf("Server starting on port %s", port)
