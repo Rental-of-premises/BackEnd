@@ -108,17 +108,6 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
         return
     }
 
-    mes := utils.ValidateEmail(requestBody.Email)
-    if mes != "" {
-        api_scripts.RespondError(res, http.StatusBadRequest, mes)
-        return
-    }
-
-    mes = utils.ValidatePassword(requestBody.Password)
-    if mes != "" {
-        api_scripts.RespondError(res, http.StatusBadRequest, mes)
-        return
-    }
 
     user, err := uc.Rep.GetByEmail(requestBody.Email)
     if err != nil || user == nil {

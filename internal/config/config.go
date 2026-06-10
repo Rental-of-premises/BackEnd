@@ -11,6 +11,7 @@ type Config struct {
 	ServerPort string
 
 	// PG
+	JWTSecret string
 	DBHost     string
 	DBPort     string
 	DBUser     string
@@ -35,6 +36,9 @@ func Load() *Config {
 		DBPassword: getEnv("DB_PASSWORD", ""),
 		DBName:     getEnv("DB_NAME", "apartment_db"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
+
+		//JWT
+		JWTSecret:  getEnv("JWT_SECRET", "fairytail"),
 	}
 }
 

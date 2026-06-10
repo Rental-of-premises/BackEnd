@@ -1,12 +1,12 @@
 package utils
 
 import (
-	"os"
 	"time"
 	"errors"
 	"strings"
 	"net/http"
 
+	config "rent/internal/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -17,7 +17,8 @@ type Claims struct {
 }
 
 func GenerateJWT(id int64, email string) (string, error) {
-	secret := os.Getenv("JWT_SECRET")
+	cnf := config.GetSingletonConfig()
+	secret := cnf.JWTSecret
 	if secret == "" {
 		return "", errors.New("JWT_SECRET не установлен в переменных окружения")
 	}
