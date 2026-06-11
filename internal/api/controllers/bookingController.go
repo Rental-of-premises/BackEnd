@@ -8,10 +8,13 @@ import (
 	"rent/internal/models"
     "encoding/json"
 	"time"
+	"strconv"
+	"github.com/gorilla/mux"
 )
 
 type BookingController struct {
 	Rep *repository.BookingRepository
+	ApartmentRepo *repository.ApartmentRepository 
 }
 
 func (bc *BookingController) GetBooking(res http.ResponseWriter, req *http.Request) {
@@ -196,5 +199,167 @@ func (bc *BookingController) CreateBooking(res http.ResponseWriter, req *http.Re
 
     api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
         "id": booking.ID,
+    })
+}
+
+func (bc *BookingController) CancelBooking(res http.ResponseWriter, req *http.Request) {
+    userID, ok := middleware.GetUserIDFromContext(req)
+    if !ok {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+        return
+    }
+
+    vars := mux.Vars(req)
+    idStr := vars["id"]
+    bookingID, err := strconv.ParseInt(idStr, 10, 64)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID бронирования")
+        return
+    }
+
+    booking, err := bc.Rep.GetByID(bookingID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске бронирования")
+        return
+    }
+    if booking == nil {
+        api_scripts.RespondError(res, http.StatusNotFound, "Бронирование не найдено")
+        return
+    }
+
+    if booking.UserID != userID {
+        api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на отмену этого бронирования")
+        return
+    }
+
+    if booking.Status != "waiting" {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Нельзя отменить бронирование в статусе "+booking.Status)
+        return
+    }
+
+    err = bc.Rep.UpdateStatus(bookingID, "cancelled")
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при отмене бронирования")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "message": "Бронирование успешно отменено",
+        "status":  "cancelled",
+    })
+}
+
+
+func (bc *BookingController) ConfirmBookingBySeller(res http.ResponseWriter, req *http.Request) {
+    userID, ok := middleware.GetUserIDFromContext(req)
+    if !ok {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+        return
+    }
+
+    vars := mux.Vars(req)
+    idStr := vars["id"]
+    bookingID, err := strconv.ParseInt(idStr, 10, 64)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID бронирования")
+        return
+    }
+
+    booking, err := bc.Rep.GetByID(bookingID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске бронирования")
+        return
+    }
+    if booking == nil {
+        api_scripts.RespondError(res, http.StatusNotFound, "Бронирование не найдено")
+        return
+    }
+
+    apartment, err := bc.ApartmentRepo.GetByID(booking.ApartmentID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске квартиры")
+        return
+    }
+    if apartment == nil {
+        api_scripts.RespondError(res, http.StatusNotFound, "Квартира не найдена")
+        return
+    }
+
+    if apartment.SellerID != userID {
+        api_scripts.RespondError(res, http.StatusForbidden, "Только продавец может подтвердить бронирование")
+        return
+    }
+
+    if booking.Status != "waiting" {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Нельзя подтвердить бронирование в статусе "+booking.Status)
+        return
+    }
+
+    err = bc.Rep.UpdateStatus(bookingID, "confirmed")
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при подтверждении бронирования")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "message": "Бронирование успешно подтверждено",
+        "status":  "confirmed",
+    })
+}
+
+func (bc *BookingController) RejectBookingBySeller(res http.ResponseWriter, req *http.Request) {
+    userID, ok := middleware.GetUserIDFromContext(req)
+    if !ok {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+        return
+    }
+
+    vars := mux.Vars(req)
+    idStr := vars["id"]
+    bookingID, err := strconv.ParseInt(idStr, 10, 64)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID бронирования")
+        return
+    }
+
+    booking, err := bc.Rep.GetByID(bookingID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске бронирования")
+        return
+    }
+    if booking == nil {
+        api_scripts.RespondError(res, http.StatusNotFound, "Бронирование не найдено")
+        return
+    }
+
+    apartment, err := bc.ApartmentRepo.GetByID(booking.ApartmentID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске квартиры")
+        return
+    }
+    if apartment == nil {
+        api_scripts.RespondError(res, http.StatusNotFound, "Квартира не найдена")
+        return
+    }
+
+    if apartment.SellerID != userID {
+        api_scripts.RespondError(res, http.StatusForbidden, "Только продавец может отклонить бронирование")
+        return
+    }
+
+    if booking.Status != "waiting" {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Нельзя отклонить бронирование в статусе "+booking.Status)
+        return
+    }
+
+    err = bc.Rep.UpdateStatus(bookingID, "rejected")
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при отклонении бронирования")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "message": "Бронирование отклонено",
+        "status":  "rejected",
     })
 }
