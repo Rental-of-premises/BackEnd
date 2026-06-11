@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"rent/internal/models"
+	"strings"
 )
 
 
@@ -162,6 +163,48 @@ func (r *ApartmentRepository) Update(apartment *models.Apartment) error {
 	}
 
 	return nil
+}
+
+func (r *ApartmentRepository) UpdatePartial(id int64, updates map[string]interface{}) error {
+    if len(updates) == 0 {
+        return nil
+    }
+    
+    setParts := []string{}
+    args := []interface{}{}
+    i := 1
+    
+    for field, value := range updates {
+        switch field {
+        case "price_per_hour":
+            if v, ok := value.(float64); ok {
+                value = int64(v)
+            }
+        case "capacity":
+            if v, ok := value.(float64); ok {
+                value = int16(v)
+            }
+        case "is_active":
+            if v, ok := value.(bool); ok {
+                value = v
+            }
+        }
+        
+        setParts = append(setParts, fmt.Sprintf("%s = $%d", field, i))
+        args = append(args, value)
+        i++
+    }
+    
+    args = append(args, id)
+    
+    query := fmt.Sprintf(
+        "UPDATE apartments SET %s WHERE id = $%d",
+        strings.Join(setParts, ", "),
+        i,
+    )
+    
+    _, err := r.Db.Exec(query, args...)
+    return err
 }
 
 func (r *ApartmentRepository) Delete(id int64) error {

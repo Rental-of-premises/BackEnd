@@ -9,7 +9,7 @@ import (
     api_scripts "rent/internal/api/scripts"
     "rent/internal/storage/repository"
     "rent/internal/api/utils"
-    //"rent/internal/api/middleware"
+    "rent/internal/api/middleware"
 )
 type UserController struct {
 	Rep *repository.UserRepository
@@ -122,8 +122,18 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
         return
     }
 
+     http.SetCookie(res, &http.Cookie{
+        Name:     "token",
+        Value:    token,
+        HttpOnly: true,
+        Secure:   false,
+        SameSite: http.SameSiteLaxMode,
+        Path:     "/",
+        MaxAge:   86400,
+    })
+
     api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
-        "token": token,
+        //"token": token,
         "user": map[string]interface{}{
             "id":    user.ID,
             "email": user.Email,
@@ -132,6 +142,46 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
     })
 }
 
-// func (us *UserController) LogOut(res http.ResponseWriter, req *http.Reques) {
+func (uc *UserController) LogOut(res http.ResponseWriter, req *http.Request) {
+    http.SetCookie(res, &http.Cookie{
+        Name:     "token",
+        Value:    "",
+        HttpOnly: true,
+        Secure:   false,
+        SameSite: http.SameSiteLaxMode,
+        Path:     "/",
+        MaxAge:   -1,
+    })
 
-// }
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "message": "Успешный выход из системы",
+    })
+}
+
+func (uc * UserController) DeleteAccount(res http.ResponseWriter, req *http.Request) {
+    userID, ok := middleware.GetUserIDFromContext(req)
+    if !ok {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+        return
+    }
+
+    user, err := uc.Rep.GetByID(userID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске пользователя")
+        return
+    }
+    if user == nil {
+        api_scripts.RespondError(res, http.StatusNotFound, "Пользователь не найден")
+        return
+    }
+
+    err = uc.Rep.Delete(userID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении аккаунта")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "message": "Аккаунт успешно удален",
+    })
+}
