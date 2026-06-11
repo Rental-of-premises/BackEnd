@@ -25,7 +25,10 @@ func CreateAndRunRoutes() {
 
     userController := &api_controllers.UserController{repository.GetUserRepository()}
     apartmentController := &api_controllers.ApartmentController{repository.GetApartmentRepository()}
-    bookingController := &api_controllers.BookingController{repository.GetBookingRepository()}
+    bookingController := &api_controllers.BookingController{
+    Rep:           repository.GetBookingRepository(),
+    ApartmentRepo: repository.GetApartmentRepository(),
+}
     // reviewController := &api_controllers.UserController{repository.GetUserRepository()}
 
     // ========== ПУБЛИЧНЫЕ МАРШРУТЫ (без токена) ==========
@@ -52,6 +55,9 @@ func CreateAndRunRoutes() {
 
     protected.HandleFunc("/account/my-bookings", bookingController.GetMyBookings).Methods("GET", "OPTIONS")
     protected.HandleFunc("/account/new-booking", bookingController.CreateBooking).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/account/my-bookings/{id}/cancel", bookingController.CancelBooking).Methods("PATCH", "OPTIONS")
+	protected.HandleFunc("/account/bookings/{id}/confirm", bookingController.ConfirmBookingBySeller).Methods("PATCH", "OPTIONS")
+	protected.HandleFunc("/account/bookings/{id}/reject", bookingController.RejectBookingBySeller).Methods("PATCH", "OPTIONS")
 
     port := config.GetSingletonConfig().ServerPort
     log.Printf("Server starting on port %s", port)
