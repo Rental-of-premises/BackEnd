@@ -175,12 +175,26 @@ func (r *ApartmentRepository) UpdatePartial(id int64, updates map[string]interfa
     i := 1
     
     for field, value := range updates {
+        switch field {
+        case "price_per_hour":
+            if v, ok := value.(float64); ok {
+                value = int64(v)
+            }
+        case "capacity":
+            if v, ok := value.(float64); ok {
+                value = int16(v)
+            }
+        case "is_active":
+            if v, ok := value.(bool); ok {
+                value = v
+            }
+        }
+        
         setParts = append(setParts, fmt.Sprintf("%s = $%d", field, i))
         args = append(args, value)
         i++
     }
     
-    setParts = append(setParts, fmt.Sprintf("updated_at = NOW()"))
     args = append(args, id)
     
     query := fmt.Sprintf(

@@ -128,11 +128,11 @@ func (ac *ApartmentController) CreateApartment(res http.ResponseWriter, req *htt
     requestBody.SellerID = userID
 
     apartment := &models.Apartment{
-        SellerID:     &requestBody.SellerID,
+        SellerID:     requestBody.SellerID,
         Name:         requestBody.Name,
-        Description:  &requestBody.Description,
-        Capacity:     &requestBody.Capacity,
-        PricePerHour: &requestBody.PricePerHour,
+        Description:  requestBody.Description,
+        Capacity:     requestBody.Capacity,
+        PricePerHour: requestBody.PricePerHour,
         IsActive:     requestBody.IsActive,
     }
 
@@ -172,7 +172,7 @@ func (ac *ApartmentController) UpdateApartment(res http.ResponseWriter, req *htt
         return
     }
 
-    if apartment.SellerID == nil || *apartment.SellerID != userID {
+    if apartment.SellerID != userID {
         api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на редактирование этой квартиры")
         return
     }
