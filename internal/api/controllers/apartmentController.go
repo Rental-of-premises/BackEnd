@@ -158,22 +158,22 @@ func (ac *ApartmentController) UpdateApartment(res http.ResponseWriter, req *htt
     idStr := vars["id"]
     apartmentID, err := strconv.ParseInt(idStr, 10, 64)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID квартиры")
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID помещения")
         return
     }
 
     apartment, err := ac.Rep.GetByID(apartmentID)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске квартиры")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
         return
     }
     if apartment == nil {
-        api_scripts.RespondError(res, http.StatusNotFound, "Квартира не найдена")
+        api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
         return
     }
 
     if apartment.SellerID != userID {
-        api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на редактирование этой квартиры")
+        api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на редактирование этого помещения")
         return
     }
 
@@ -186,15 +186,55 @@ func (ac *ApartmentController) UpdateApartment(res http.ResponseWriter, req *htt
 
     err = ac.Rep.UpdatePartial(apartmentID, updates)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при обновлении квартиры")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при обновлении помещения")
         return
     }
 
     updatedApartment, err := ac.Rep.GetByID(apartmentID)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при получении обновленной квартиры")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при получении обновленного помещения")
         return
     }
 
     api_scripts.RespondJSON(res, http.StatusOK, updatedApartment)
+}
+
+func (ac *ApartmentController) DeleteApartment(res http.ResponseWriter, req *http.Request) {
+    userID, ok := middleware.GetUserIDFromContext(req)
+    if !ok {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+        return
+    }
+
+    vars := mux.Vars(req)
+    idStr := vars["id"]
+    apartmentID, err := strconv.ParseInt(idStr, 10, 64)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID помещения")
+        return
+    }
+
+    apartment, err := ac.Rep.GetByID(apartmentID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
+        return
+    }
+    if apartment == nil {
+        api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
+        return
+    }
+
+    if apartment.SellerID != userID {
+        api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на удаление этого помещения")
+        return
+    }
+
+    err = ac.Rep.Delete(apartmentID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении помещения")
+        return
+    }
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "message": "Объявление успешно удалено",
+    })
 }
