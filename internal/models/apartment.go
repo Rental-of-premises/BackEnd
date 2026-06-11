@@ -17,7 +17,7 @@ type Apartment struct {
 
 type ApartmentFilter struct {
     IsActive *bool `json:"is_active"`
-    SellerId *int64  `json:"seller_id"`
+    SellerID *int64  `json:"seller_id"`
     MinPrice *int64  `json:"min_price"`
     MaxPrice *int64  `json:"max_price"`
     Limit *int  `json:"limit"`

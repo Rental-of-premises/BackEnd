@@ -65,7 +65,7 @@ func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *htt
 
 	userID, ok := middleware.GetUserIDFromContext(req)
 	if !ok {
-		api_scripts.RespondError(res, http.StatusUnauthorized, "Wrong id type in context")
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
 		return
 	}
 
@@ -73,7 +73,7 @@ func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *htt
 	offset := 0
 	
 	filter := models.ApartmentFilter{
-		SellerId : &userID,
+		SellerID : &userID,
 		Limit : &limit,
 		Offset : &offset,
 	}
@@ -83,7 +83,7 @@ func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *htt
 		return
 	}
 	if apartments == nil {
-		api_scripts.RespondError(res, http.StatusNotFound, "Apartment not found")
+		api_scripts.RespondError(res, http.StatusNotFound, "Список пуст")
 		return
 	}
 
@@ -94,7 +94,7 @@ func (ac *ApartmentController) CreateApartment(res http.ResponseWriter, req *htt
 
 	userID, ok := middleware.GetUserIDFromContext(req)
 	if !ok {
-		api_scripts.RespondError(res, http.StatusUnauthorized, "Wrong id type in context")
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
 		return
 	}
 	var requestBody struct {

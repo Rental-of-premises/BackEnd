@@ -18,15 +18,14 @@ func NewBookingRepository(db *sql.DB) *BookingRepository {
 
 func (r *BookingRepository) Create(booking *models.Booking) error {
 	query := `
-        INSERT INTO booking (user_id, apartment_id, created_at, status, time_from, time_to)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO booking (user_id, apartment_id, status, time_from, time_to)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id, created_at
     `
 
 	err := r.Db.QueryRow(query,
 		booking.UserID,
 		booking.ApartmentID,
-		booking.CreatedAt,
 		booking.Status,
 		booking.TimeFrom,
 		booking.TimeTo,
@@ -52,7 +51,7 @@ func (r *BookingRepository) GetAll(filter *models.BookingFilter) ([]*models.Book
 	argCounter := 1
 
     if filter.Status != nil {
-        query += fmt.Sprintf(" AND b.is_active = $%s", argCounter)
+        query += fmt.Sprintf(" AND b.status = $%d", argCounter)
         args = append(args, *filter.Status)
         argCounter++
     }
@@ -136,16 +135,15 @@ func (r *BookingRepository) GetByID(id int64) (*models.Booking, error) {
 	return &booking, nil
 }
 
-func (r *BookingRepository) GetByUser(userID int64, limit, offset int) ([]*models.Booking, error) {
+func (r *BookingRepository) GetByUser(userID int64) ([]*models.Booking, error) {
 	query := `
         SELECT id, user_id, apartment_id, created_at, status, time_from, time_to
         FROM booking
         WHERE user_id = $1
         ORDER BY time_from DESC
-        LIMIT $2 OFFSET $3
     `
 
-	rows, err := r.Db.Query(query, userID, limit, offset)
+	rows, err := r.Db.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +248,7 @@ func (r *BookingRepository) UpdateStatus(id int64, status string) error {
 }
 
 func (r *BookingRepository) Cancel(id int64) error {
-	return r.UpdateStatus(id, "")
+	return r.UpdateStatus(id, "cancelled")
 }
 
 func (r *BookingRepository) Delete(id int64) error {
