@@ -31,11 +31,65 @@ func ParseID(r *http.Request) (int64, error) {
 }
 
 func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
-	var filter models.ApartmentFilter
-	if err := json.NewDecoder(r.Body).Decode(&filter); err != nil {
-		return nil, fmt.Errorf("invalid filter")
+	filter := &models.ApartmentFilter{}
+	
+	if isActiveStr := r.URL.Query().Get("is_active"); isActiveStr != "" {
+		isActive, err := strconv.ParseBool(isActiveStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid is_active value, must be true/false")
+		}
+		filter.IsActive = &isActive
 	}
-	return &filter, nil
+	
+	if sellerIDStr := r.URL.Query().Get("seller_id"); sellerIDStr != "" {
+		sellerID, err := strconv.ParseInt(sellerIDStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid seller_id value, must be integer")
+		}
+		filter.SellerID = &sellerID
+	}
+	
+	if minPriceStr := r.URL.Query().Get("min_price"); minPriceStr != "" {
+		minPrice, err := strconv.ParseInt(minPriceStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid min_price value, must be integer")
+		}
+		filter.MinPrice = &minPrice
+	}
+	
+	if maxPriceStr := r.URL.Query().Get("max_price"); maxPriceStr != "" {
+		maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid max_price value, must be integer")
+		}
+		filter.MaxPrice = &maxPrice
+	}
+	
+	limit := 10
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		parsed, err := strconv.Atoi(limitStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid limit value, must be integer")
+		}
+		if parsed > 0 {
+			limit = parsed
+		}
+	}
+	filter.Limit = &limit
+	
+	offset := 0
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		parsed, err := strconv.Atoi(offsetStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid offset value, must be integer")
+		}
+		if parsed >= 0 {
+			offset = parsed
+		}
+	}
+	filter.Offset = &offset
+	
+	return filter, nil
 }
 
 func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
@@ -46,4 +100,3 @@ func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
 
 	return &filter, nil
 }
-

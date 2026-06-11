@@ -38,46 +38,117 @@ func (bc *BookingController) GetBooking(res http.ResponseWriter, req *http.Reque
 	api_scripts.RespondJSON(res, http.StatusOK, booking)
 }
 	
-func (bc *BookingController) GetAllBookings(res http.ResponseWriter, req *http.Request) {
-	filter, err := api_scripts.ParseBookingFilter(req)
+// func (bc *BookingController) GetAllBookings(res http.ResponseWriter, req *http.Request) {
+// 	filter, err := api_scripts.ParseBookingFilter(req)
 
-	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-		return
-	}
+// 	if err != nil {
+// 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+// 		return
+// 	}
 
-	bookings, err := bc.Rep.GetAll(filter)
-	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-		return
-	}
-	if bookings == nil {
-		api_scripts.RespondError(res, http.StatusNotFound, "Брони не найдены")
-		return
-	}
+// 	bookings, err := bc.Rep.GetAll(filter)
+// 	if err != nil {
+// 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+// 		return
+// 	}
+// 	if bookings == nil {
+// 		api_scripts.RespondError(res, http.StatusNotFound, "Брони не найдены")
+// 		return
+// 	}
 
-	api_scripts.RespondJSON(res, http.StatusOK, bookings)
-}
+// 	api_scripts.RespondJSON(res, http.StatusOK, bookings)
+// }
 
 func (bc *BookingController) GetMyBookings(res http.ResponseWriter, req *http.Request) {
+    userID, ok := middleware.GetUserIDFromContext(req)
+    if !ok {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
+        return
+    }
+    
+    statusFilter := req.URL.Query().Get("statusFilter")
+    if statusFilter == "" {
+        statusFilter = "active"
+    }
+    
+	limit := inf
+	offset := 0
+    filter := &models.BookingFilter{
+        UserID: &userID,
+        Limit: &limit,
+        Offset: &offset,
+    }
+    
+    var allBookings []*models.Booking
+    var statuses []string
+    
+    switch statusFilter {
+    case "active":
+		statuses = append(statuses, "confirmed")
+    case "history":
+		statuses = append(statuses, "cancelled", "completed")
+    case "pending":
+		statuses = append(statuses, "waiting")
+    case "all":
+		statuses = append(statuses, "confirmed", "cancelled", "completed", "waiting")
+	}
+	for _, status := range statuses {
+		filter.Status = &status
+		bookings, err := bc.Rep.GetAll(filter)
+		if err != nil {
+			api_scripts.RespondError(res, http.StatusInternalServerError, err.Error())
+			return
+		}
+		allBookings = append(allBookings, bookings...)
+	}
+    
+    api_scripts.RespondJSON(res, http.StatusOK,allBookings)
+}
 
-	userID, ok := middleware.GetUserIDFromContext(req)
-	if !ok {
-		api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
-		return
+func (bc *BookingController) GetBookings(res http.ResponseWriter, req *http.Request) {
+    userID, ok := middleware.GetUserIDFromContext(req)
+    if !ok {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
+        return
+    }
+    
+    statusFilter := req.URL.Query().Get("statusFilter")
+    if statusFilter == "" {
+        statusFilter = "active"
+    }
+    
+	limit := inf
+	offset := 0
+    filter := &models.BookingFilter{
+        SellerID: &userID,
+        Limit: &limit,
+        Offset: &offset,
+    }
+    
+    var allBookings []*models.Booking
+    var statuses []string
+    
+    switch statusFilter {
+    case "active":
+		statuses = append(statuses, "confirmed")
+    case "history":
+		statuses = append(statuses, "cancelled", "completed")
+    case "pending":
+		statuses = append(statuses, "waiting")
+    case "all":
+		statuses = append(statuses, "confirmed", "cancelled", "completed", "waiting")
 	}
-	
-	bookings, err := bc.Rep.GetByUser(userID)
-	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-		return
+	for _, status := range statuses {
+		filter.Status = &status
+		bookings, err := bc.Rep.GetAll(filter)
+		if err != nil {
+			api_scripts.RespondError(res, http.StatusInternalServerError, err.Error())
+			return
+		}
+		allBookings = append(allBookings, bookings...)
 	}
-	if bookings == nil {
-		api_scripts.RespondError(res, http.StatusNotFound, "Список пуст")
-		return
-	}
-
-	api_scripts.RespondJSON(res, http.StatusOK, bookings)
+    
+    api_scripts.RespondJSON(res, http.StatusOK,allBookings)
 }
 
 func (bc *BookingController) CreateBooking(res http.ResponseWriter, req *http.Request) {

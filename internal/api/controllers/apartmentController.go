@@ -44,52 +44,44 @@ func (ac *ApartmentController) GetApartment(res http.ResponseWriter, req *http.R
 }
 
 func (ac *ApartmentController) GetAllApartments(res http.ResponseWriter, req *http.Request) {
-    filter, err := api_scripts.ParseApartmentFilter(req)
+	filter, err := api_scripts.ParseApartmentFilter(req)
 
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-        return
-    }
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		return
+	}
 
-    apartments, err := ac.Rep.GetAll(filter)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-        return
-    }
-    if apartments == nil {
-        api_scripts.RespondError(res, http.StatusNotFound, "Apartment not found")
-        return
-    }
+	apartments, err := ac.Rep.GetAll(filter)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		return
+	}
 
-    api_scripts.RespondJSON(res, http.StatusOK, apartments)
+	api_scripts.RespondJSON(res, http.StatusOK, apartments)
 }
 
 func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *http.Request) {
-    userID, ok := middleware.GetUserIDFromContext(req)
-    if !ok {
-        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
-        return
-    }
+	userID, ok := middleware.GetUserIDFromContext(req)
+	if !ok {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
+		return
+	}
 
-    limit := inf
-    offset := 0
+	limit := inf
+	offset := 0
+	
+	filter := models.ApartmentFilter{
+		SellerID : &userID,
+		Limit : &limit,
+		Offset : &offset,
+	}
+	apartments, err := ac.Rep.GetAll(&filter)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		return
+	}
 
-    filter := models.ApartmentFilter{
-        SellerID: &userID,
-        Limit:    &limit,
-        Offset:   &offset,
-    }
-    apartments, err := ac.Rep.GetAll(&filter)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-        return
-    }
-    if apartments == nil {
-        api_scripts.RespondError(res, http.StatusNotFound, "Список пуст")
-        return
-    }
-
-    api_scripts.RespondJSON(res, http.StatusOK, apartments)
+	api_scripts.RespondJSON(res, http.StatusOK, apartments)
 }
 
 func (ac *ApartmentController) CreateApartment(res http.ResponseWriter, req *http.Request) {

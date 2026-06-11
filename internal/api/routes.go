@@ -51,13 +51,14 @@ func CreateAndRunRoutes() {
     protected.HandleFunc("/account/my-apartments", apartmentController.GetMyApartments).Methods("GET", "OPTIONS")
     protected.HandleFunc("/account/new-apartment", apartmentController.CreateApartment).Methods("POST", "OPTIONS")
     protected.HandleFunc("/account/apartments/{id}/edit", apartmentController.UpdateApartment).Methods("PATCH", "OPTIONS")
-	protected.HandleFunc("/account/apartments/{id}/delete", apartmentController.DeleteApartment).Methods("DELETE", "OPTIONS")
+	  protected.HandleFunc("/account/apartments/{id}/delete", apartmentController.DeleteApartment).Methods("DELETE", "OPTIONS")
 
     protected.HandleFunc("/account/my-bookings", bookingController.GetMyBookings).Methods("GET", "OPTIONS")
     protected.HandleFunc("/account/new-booking", bookingController.CreateBooking).Methods("POST", "OPTIONS")
-	protected.HandleFunc("/account/my-bookings/{id}/cancel", bookingController.CancelBooking).Methods("PATCH", "OPTIONS")
-	protected.HandleFunc("/account/bookings/{id}/confirm", bookingController.ConfirmBookingBySeller).Methods("PATCH", "OPTIONS")
-	protected.HandleFunc("/account/bookings/{id}/reject", bookingController.RejectBookingBySeller).Methods("PATCH", "OPTIONS")
+	  protected.HandleFunc("/account/my-bookings/{id}/cancel", bookingController.CancelBooking).Methods("PATCH", "OPTIONS")
+	  protected.HandleFunc("/account/bookings/{id}/confirm", bookingController.ConfirmBookingBySeller).Methods("PATCH", "OPTIONS")
+	  protected.HandleFunc("/account/bookings/{id}/reject", bookingController.RejectBookingBySeller).Methods("PATCH", "OPTIONS")
+    protected.HandleFunc("/account/bookings", bookingController.GetBookings).Methods("GET", "OPTIONS")
 
     port := config.GetSingletonConfig().ServerPort
     log.Printf("Server starting on port %s", port)
