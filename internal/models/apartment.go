@@ -13,6 +13,7 @@ type Apartment struct {
 	PricePerHour int64    `json:"price_per_hour"`
 	IsActive     bool      `json:"is_active"`
 	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty"`
 }
 
 type ApartmentFilter struct {
