@@ -16,10 +16,10 @@ type Booking struct {
 
 type BookingFilter struct {
 	Status   *string `json:"status"`
-	SellerID *int   `json:"seller_id"`
-	UserID *int   `json:"user_id"`
-    MinPrice *int  `json:"min_price"`
-    MaxPrice *int  `json:"max_price"`
+	SellerID *int64   `json:"seller_id"`
+	UserID *int64   `json:"user_id"`
+    MinPrice *int64  `json:"min_price"`
+    MaxPrice *int64  `json:"max_price"`
     Limit    *int   `json:"limit"`
 	Offset   *int   `json:"offset"` 
 }

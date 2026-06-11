@@ -28,12 +28,12 @@ func CreateAndRunRoutes() {
 		
 		// ========== ПУБЛИЧНЫЕ МАРШРУТЫ (без токена) ==========
 
-	r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET")
-	r.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST")
-	r.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST")
+	r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET", "OPTIONS")
+	r.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST", "OPTIONS")
+	r.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST", "OPTIONS")
 
-	r.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET")
-	r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("POST")
+	r.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET", "OPTIONS")
+	r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("GET", "OPTIONS")
 
 	r.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET")
 
@@ -41,11 +41,12 @@ func CreateAndRunRoutes() {
 
 	protected := r.PathPrefix("/api").Subrouter()
     protected.Use(middleware.AuthMiddleware)
-    protected.HandleFunc("/account/my-apartments", apartmentController.GetMyApartments).Methods("GET")
-    protected.HandleFunc("/account/new-apartment", apartmentController.CreateApartment).Methods("POST")
+    protected.HandleFunc("/account/my-apartments", apartmentController.GetMyApartments).Methods("GET", "OPTIONS")
+    protected.HandleFunc("/account/new-apartment", apartmentController.CreateApartment).Methods("POST", "OPTIONS")
 
-    protected.HandleFunc("/account/my-bookings", bookingController.GetMyBookings).Methods("GET")
-    protected.HandleFunc("/account/new-booking", bookingController.CreateBooking).Methods("POST")
+    protected.HandleFunc("/account/bookings", bookingController.GetBookings).Methods("GET", "OPTIONS")
+    protected.HandleFunc("/account/my-bookings", bookingController.GetMyBookings).Methods("GET", "OPTIONS")
+    protected.HandleFunc("/account/new-booking", bookingController.CreateBooking).Methods("POST", "OPTIONS")
 
 	port := config.GetSingletonConfig().ServerPort
 	log.Printf("Server starting on port %s", port)

@@ -52,10 +52,6 @@ func (ac *ApartmentController) GetAllApartments(res http.ResponseWriter, req *ht
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
-	if apartments == nil {
-		api_scripts.RespondError(res, http.StatusNotFound, "Apartment not found")
-		return
-	}
 
 	api_scripts.RespondJSON(res, http.StatusOK, apartments)
 }
@@ -80,10 +76,6 @@ func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *htt
 	apartments, err := ac.Rep.GetAll(&filter)
 	if err != nil {
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-		return
-	}
-	if apartments == nil {
-		api_scripts.RespondError(res, http.StatusNotFound, "Список пуст")
 		return
 	}
 
