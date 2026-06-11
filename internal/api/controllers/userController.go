@@ -122,8 +122,18 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
         return
     }
 
+     http.SetCookie(res, &http.Cookie{
+        Name:     "token",
+        Value:    token,
+        HttpOnly: true,
+        Secure:   false,
+        SameSite: http.SameSiteLaxMode,
+        Path:     "/",
+        MaxAge:   86400,
+    })
+
     api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
-        "token": token,
+        //"token": token,
         "user": map[string]interface{}{
             "id":    user.ID,
             "email": user.Email,
@@ -133,6 +143,16 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
 }
 
 func (uc *UserController) LogOut(res http.ResponseWriter, req *http.Request) {
+    http.SetCookie(res, &http.Cookie{
+        Name:     "token",
+        Value:    "",
+        HttpOnly: true,
+        Secure:   false,
+        SameSite: http.SameSiteLaxMode,
+        Path:     "/",
+        MaxAge:   -1,
+    })
+
     api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
         "message": "Успешный выход из системы",
     })
