@@ -6,8 +6,8 @@ import (
 
 type Booking struct {
 	ID          int64     `json:"id"`
-	UserID      *int64    `json:"user_id,omitempty"`
-	ApartmentID *int64    `json:"apartment_id,omitempty"`
+	UserID      int64    `json:"user_id"`
+	ApartmentID int64    `json:"apartment_id"`
 	CreatedAt   time.Time `json:"created_at"`
 	Status      string    `json:"status"`
 	TimeFrom    time.Time `json:"time_from"`
@@ -17,6 +17,7 @@ type Booking struct {
 type BookingFilter struct {
 	Status   *string `json:"status"`
 	SellerID *int   `json:"seller_id"`
+	UserID *int   `json:"user_id"`
     MinPrice *int  `json:"min_price"`
     MaxPrice *int  `json:"max_price"`
     Limit    *int   `json:"limit"`

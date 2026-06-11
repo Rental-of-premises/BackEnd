@@ -82,9 +82,9 @@ func (r *ApartmentRepository) GetAll(filter *models.ApartmentFilter) ([]*models.
     }
     
     // SellerId - проверяем на nil
-    if filter.SellerId != nil {
+    if filter.SellerID != nil {
         query += fmt.Sprintf(" AND seller_id = $%d", argCounter)
-        args = append(args, *filter.SellerId)
+        args = append(args, *filter.SellerID)
         argCounter++
     }
     

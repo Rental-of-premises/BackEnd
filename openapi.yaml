@@ -4,13 +4,38 @@ info:
   description: API для аренды помещений
   version: 1.0.0
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:3000
     description: Local development server
 
 paths:
+  # ========== ПУБЛИЧНЫЕ МАРШРУТЫ ==========
+  /users/{id}:
+    get:
+      summary: Получить пользователя по ID
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Неверный ID
+        '404':
+          description: Пользователь не найден
+
   /auth/sign-up:
     post:
-      summary: Регистрация нового пользователя
+      summary: Регистрация пользователя
       tags:
         - Auth
       requestBody:
@@ -38,7 +63,7 @@ paths:
                   example: John Doe
       responses:
         '201':
-          description: Пользователь успешно создан
+          description: Пользователь создан
           content:
             application/json:
               schema:
@@ -52,7 +77,7 @@ paths:
                   name:
                     type: string
         '400':
-          description: Неверный JSON или валидация не пройдена
+          description: Неверный JSON
         '409':
           description: Пользователь уже существует
 
@@ -86,35 +111,18 @@ paths:
                 properties:
                   token:
                     type: string
-                    description: JWT токен
                   user:
-                    $ref: '#/components/schemas/UserResponse'
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        format: int64
+                      email:
+                        type: string
+                      name:
+                        type: string
         '401':
           description: Неверный email или пароль
-
-  /users/{id}:
-    get:
-      summary: Получить пользователя по ID
-      tags:
-        - Users
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: Успешно
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserResponse'
-        '400':
-          description: Неверный ID
-        '404':
-          description: Пользователь не найден
 
   /apartments/{id}:
     get:
@@ -161,7 +169,7 @@ paths:
         '400':
           description: Неверный фильтр
 
-  /booking/{id}:
+  /bookings/{id}:
     get:
       summary: Получить бронирование по ID
       tags:
@@ -183,9 +191,79 @@ paths:
         '404':
           description: Бронирование не найдено
 
+  # ========== ЗАЩИЩЕННЫЕ МАРШРУТЫ (требуют JWT) ==========
+  /api/account/my-apartments:
+    get:
+      summary: Получить мои апартаменты (список продавца)
+      tags:
+        - My Apartments
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Apartment'
+        '401':
+          description: Неавторизован
+        '404':
+          description: Апартаменты не найдены
+
+    post:
+      summary: Создать новый апартамент
+      tags:
+        - My Apartments
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: Уютная студия
+                description:
+                  type: string
+                  example: Светлая студия с панорамными окнами
+                capacity:
+                  type: integer
+                  minimum: 1
+                  example: 4
+                price_per_hour:
+                  type: integer
+                  minimum: 0
+                  example: 1500
+                is_active:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: Апартамент создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int64
+        '400':
+          description: Неверный JSON или ошибка валидации
+        '401':
+          description: Неавторизован
+
 components:
   schemas:
-    UserResponse:
+    User:
       type: object
       properties:
         id:
@@ -208,23 +286,16 @@ components:
         seller_id:
           type: integer
           format: int64
-          nullable: true
         name:
           type: string
         description:
           type: string
-          nullable: true
         capacity:
           type: integer
-          minimum: 1
-          nullable: true
         price_per_hour:
           type: integer
-          minimum: 1
-          nullable: true
         is_active:
           type: boolean
-          default: true
         created_at:
           type: string
           format: date-time
@@ -236,19 +307,18 @@ components:
           type: boolean
         seller_id:
           type: integer
+          format: int64
         min_price:
           type: integer
-          minimum: 1
+          minimum: 0
         max_price:
           type: integer
-          minimum: 1
+          minimum: 0
         limit:
           type: integer
-          minimum: 1
           default: 10
         offset:
           type: integer
-          minimum: 0
           default: 0
 
     Booking:
@@ -260,11 +330,9 @@ components:
         user_id:
           type: integer
           format: int64
-          nullable: true
         apartment_id:
           type: integer
           format: int64
-          nullable: true
         created_at:
           type: string
           format: date-time
@@ -278,38 +346,10 @@ components:
           type: string
           format: date-time
 
-    BookingFilter:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [confirmed, cancelled, completed]
-        seller_id:
-          type: integer
-        min_price:
-          type: integer
-        max_price:
-          type: integer
-        limit:
-          type: integer
-          minimum: 1
-          default: 10
-        offset:
-          type: integer
-          minimum: 0
-          default: 0
-
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
 
-security:
-  - BearerAuth: []
+security: []

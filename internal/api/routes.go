@@ -38,10 +38,14 @@ func CreateAndRunRoutes() {
 	r.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET")
 
   	// ========== ЗАЩИЩЕННЫЙ МАРШРУТ (с проверкой токена) ==========
+
 	protected := r.PathPrefix("/api").Subrouter()
     protected.Use(middleware.AuthMiddleware)
     protected.HandleFunc("/account/my-apartments", apartmentController.GetMyApartments).Methods("GET")
-    protected.HandleFunc("/account/new-apartments", apartmentController.CreateApartment).Methods("POST")
+    protected.HandleFunc("/account/new-apartment", apartmentController.CreateApartment).Methods("POST")
+
+    protected.HandleFunc("/account/my-bookings", bookingController.GetMyBookings).Methods("GET")
+    protected.HandleFunc("/account/new-booking", bookingController.CreateBooking).Methods("POST")
 
 	port := config.GetSingletonConfig().ServerPort
 	log.Printf("Server starting on port %s", port)

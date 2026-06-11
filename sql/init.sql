@@ -50,7 +50,7 @@ CREATE TABLE booking (
     time_from TIMESTAMPTZ NOT NULL,
     time_to TIMESTAMPTZ NOT NULL,
 
-    CHECK (status IN ('confirmed', 'cancelled', 'completed')),
+    CHECK (status IN ('confirmed', 'cancelled', 'completed', 'waiting', 'rejected')),
     CHECK (time_to > time_from),
 
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
