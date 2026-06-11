@@ -62,6 +62,13 @@ func (r *BookingRepository) GetAll(filter *models.BookingFilter) ([]*models.Book
         args = append(args, *filter.SellerID)
         argCounter++
     }
+	
+    // UserId - проверяем на nil
+    if filter.UserID != nil {
+        query += fmt.Sprintf(" AND b.user_id = $%d", argCounter)
+        args = append(args, *filter.UserID)
+        argCounter++
+    }
     
     // MinPrice - проверяем на nil
     if filter.MinPrice != nil {
@@ -211,7 +218,7 @@ func (r *BookingRepository) CheckAvailability(apartmentID int64, timeFrom, timeT
         SELECT COUNT(*)
         FROM booking
         WHERE apartment_id = $1
-        AND status NOT IN ('cancelled')
+        AND status NOT IN ('cancelled', 'rejected')
         AND (
             (time_from <= $2 AND time_to > $2) OR
             (time_from < $3 AND time_to >= $3) OR

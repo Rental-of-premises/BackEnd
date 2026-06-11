@@ -52,6 +52,7 @@ func CreateAndRunRoutes() {
 
     protected.HandleFunc("/account/my-bookings", bookingController.GetMyBookings).Methods("GET", "OPTIONS")
     protected.HandleFunc("/account/new-booking", bookingController.CreateBooking).Methods("POST", "OPTIONS")
+    protected.HandleFunc("/account/bookings", bookingController.GetBookings).Methods("GET", "OPTIONS")
 
     port := config.GetSingletonConfig().ServerPort
     log.Printf("Server starting on port %s", port)
