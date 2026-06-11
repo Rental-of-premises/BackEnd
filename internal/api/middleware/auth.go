@@ -17,7 +17,13 @@ const (
 
 func AuthMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-        tokenString := utils.ExtractToken(req)
+        var tokenString string
+        
+        cookie, err := req.Cookie("token")
+        if err == nil {
+            tokenString = cookie.Value
+        }
+
         if tokenString == "" {
             api_scripts.RespondError(res, http.StatusUnauthorized, "Отсутствует токен авторизации")
             return
