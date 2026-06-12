@@ -10,5 +10,7 @@ type User struct {
 	Password  string    `json:"password"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
+	IsActive   bool       `json:"is_active"`
+    EmailToken *string    `json:"email_token,omitempty"`
 }
 

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"rent/internal/models"
+	"log"
 )
 
 type UserRepository struct {
@@ -15,15 +16,26 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 }
 
 func (r *UserRepository) Create(user *models.User) error {
-	query := `
-		INSERT INTO users (name, password, email)
-		VALUES ($1, $2, $3)
-		RETURNING id, created_at
-	`
+    query := `
+        INSERT INTO users (name, password, email, is_active, email_token)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+    `
 
-	err := r.Db.QueryRow(query, user.Name, user.Password, user.Email).Scan(&user.ID, &user.CreatedAt)
+    err := r.Db.QueryRow(query,
+        user.Name,
+        user.Password,
+        user.Email,
+        user.IsActive,
+        user.EmailToken,
+    ).Scan(&user.ID)
 
-	return err
+    if err != nil {
+        return err
+    }
+
+
+    return nil
 }
 
 func (r *UserRepository) GetByID(id int64) (*models.User, error) {
@@ -49,14 +61,14 @@ func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 
 func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 	query := `
-		SELECT id, name, password, email, created_at
+		SELECT id, name, password, email, is_active, email_token, created_at
 		FROM users
 		WHERE email = $1
 	`
 
 	var user models.User
 	err := r.Db.QueryRow(query, email).Scan(
-		&user.ID, &user.Name, &user.Password, &user.Email, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Password, &user.Email, &user.IsActive, &user.EmailToken, &user.CreatedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -135,4 +147,27 @@ func (r *UserRepository) Delete(id int64) error {
 	}
 
 	return nil
+}
+
+func (r *UserRepository) UpdateEmailToken(userID int64, token string) error {
+    log.Printf("📝 UpdateEmailToken: userID=%d, token=%s", userID, token)
+    query := `UPDATE users SET email_token = $1 WHERE id = $2`
+    result, err := r.Db.Exec(query, token, userID)
+    if err != nil {
+        log.Printf("❌ Ошибка UPDATE: %v", err)
+        return err
+    }
+    rows, _ := result.RowsAffected()
+    log.Printf("✅ Обновлено строк: %d", rows)
+    return nil
+}
+
+func (r *UserRepository) ActivateUser(token string) (int64, error) {
+    var userID int64
+    query := `UPDATE users SET is_active = true, email_token = NULL WHERE email_token = $1 RETURNING id`
+    err := r.Db.QueryRow(query, token).Scan(&userID)
+    if err == sql.ErrNoRows {
+        return 0, nil
+    }
+    return userID, err
 }

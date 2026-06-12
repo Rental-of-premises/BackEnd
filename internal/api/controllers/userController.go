@@ -3,7 +3,10 @@ package api_controllers
 import (
     "encoding/json"
     "net/http"
+    "fmt"
+    "log"
     
+    "rent/internal/email"
     "rent/internal/models"
     //"github.com/gorilla/mux"
     api_scripts "rent/internal/api/scripts"
@@ -13,6 +16,7 @@ import (
 )
 type UserController struct {
 	Rep *repository.UserRepository
+    EmailService *email.EmailService
 }
 
 func (uc *UserController) GetUser(res http.ResponseWriter, req *http.Request) {
@@ -78,6 +82,8 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 		Name:     requestBody.Name,
 		Password: hashed,
         Email:    requestBody.Email,
+        IsActive:  false,
+        EmailToken: nil,
     }
 
     err = uc.Rep.Create(user)
@@ -85,6 +91,39 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
         api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка сохранения пользователя")
         return
     }
+
+    token, err := utils.GenerateRandomToken()
+    if err != nil {
+        log.Printf("❌ GenerateRandomToken ошибка: %v", err)
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации")
+        return
+    }
+
+    err = uc.Rep.UpdateEmailToken(user.ID, token)
+    if err != nil {
+        log.Printf("❌ UpdateEmailToken ошибка: %v", err)
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации")
+        return
+    }
+
+    go func() {
+        confirmURL := fmt.Sprintf("http://localhost:8080/auth/confirm-email?token=%s", token)
+        
+        data := struct {
+            Name       string
+            ConfirmURL string
+        }{
+            Name:       user.Name,
+            ConfirmURL: confirmURL,
+        }
+        
+        body, err := uc.EmailService.RenderTemplate("welcome.html", data)
+        if err != nil {
+            return
+        }
+        
+        uc.EmailService.SendEmail(user.Email, "Подтверждение регистрации", body)
+    }()
 
     api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
         "id":    user.ID,
@@ -107,6 +146,11 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
     user, err := uc.Rep.GetByEmail(requestBody.Email)
     if err != nil || user == nil {
         api_scripts.RespondError(res, http.StatusUnauthorized, "Пользователь не существует")
+        return
+    }
+
+    if !user.IsActive {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Подтвердите email перед входом. Проверьте почту.")
         return
     }
 
@@ -183,5 +227,27 @@ func (uc * UserController) DeleteAccount(res http.ResponseWriter, req *http.Requ
 
     api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
         "message": "Аккаунт успешно удален",
+    })
+}
+
+func (uc *UserController) ConfirmEmail(res http.ResponseWriter, req *http.Request) {
+    token := req.URL.Query().Get("token")
+    if token == "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Токен не указан")
+        return
+    }
+
+    userID, err := uc.Rep.ActivateUser(token)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка активации")
+        return
+    }
+    if userID == 0 {
+        api_scripts.RespondError(res, http.StatusNotFound, "Неверный или просроченный токен")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "message": "Email успешно подтверждён! Теперь вы можете войти.",
     })
 }
