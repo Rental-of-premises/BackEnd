@@ -1,3 +1,4 @@
+version: '3.8'
 services:
   postgres:
     build:
@@ -31,6 +32,15 @@ services:
       - postgres_network
     depends_on:
       - postgres
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "1025:1025"   # SMTP порт (для отправки писем)
+      - "8025:8025"   # Web-интерфейс (для просмотра писем)
+    networks:
+      - postgres_network
 
 volumes:
   postgres_data:

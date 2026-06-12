@@ -6,6 +6,8 @@ CREATE TABLE users (
     name TEXT NOT NULL,
     password TEXT NOT NULL,
     email email_type NOT NULL,
+    is_active BOOLEAN DEFAULT false,
+    email_token VARCHAR(64), 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

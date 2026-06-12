@@ -18,6 +18,14 @@ type Config struct {
 	DBPassword string
 	DBName     string
 	DBSSLMode  string
+
+	// mail
+	SMTPHost     string
+    SMTPPort     int
+    SMTPUser     string
+    SMTPPassword string
+    SMTPFromEmail string
+    SMTPFromName  string
 }
 
 func Load() *Config {
@@ -39,6 +47,14 @@ func Load() *Config {
 
 		//JWT
 		JWTSecret:  getEnv("JWT_SECRET", "fairytail"),
+
+		// Mail
+		SMTPHost:      getEnv("SMTP_HOST", "localhost"),
+		SMTPPort:      getEnvAsInt("SMTP_PORT", 1025),
+		SMTPUser:      getEnv("SMTP_USER", ""),
+		SMTPPassword:  getEnv("SMTP_PASSWORD", ""),
+		SMTPFromEmail: getEnv("SMTP_FROM_EMAIL", "no-reply@rental.com"),
+		SMTPFromName:  getEnv("SMTP_FROM_NAME", "Rental Service"),
 	}
 }
 

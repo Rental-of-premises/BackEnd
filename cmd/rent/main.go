@@ -7,6 +7,7 @@ import (
 	"rent/internal/models"
 	"rent/internal/storage/repository"
 	"time"
+	//"rent/internal/email"
 )
 
 func checkErr(err error) {
