@@ -42,92 +42,87 @@ func (uc *UserController) GetUser(res http.ResponseWriter, req *http.Request) {
 }
 
 func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
-    var requestBody struct {
-        Email    string `json:"email"`
-        Password string `json:"password"`
-        Name     string `json:"name"`
-    }
+	var requestBody struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Name     string `json:"name"`
+	}
 
-    err := json.NewDecoder(req.Body).Decode(&requestBody)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
-        return
-    }
+	err := json.NewDecoder(req.Body).Decode(&requestBody)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
+		return
+	}
 
-    mes := utils.ValidateEmail(requestBody.Email)
-    if mes != "" {
-        api_scripts.RespondError(res, http.StatusBadRequest, mes)
-        return
-    }
+	mes := utils.ValidateEmail(requestBody.Email)
+	if mes != "" {
+		api_scripts.RespondError(res, http.StatusBadRequest, mes)
+		return
+	}
 
-    mes = utils.ValidatePassword(requestBody.Password)
-    if mes != "" {
-        api_scripts.RespondError(res, http.StatusBadRequest, mes)
-        return
-    }
+	// Пароль уже захеширован на фронтенде — сохраняем как есть
+	// Просто проверяем, что длина соответствует хешу bcrypt
+	if len(requestBody.Password) < 60 {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный формат пароля")
+		return
+	}
 
-    existingUser, _ := uc.Rep.GetByEmail(requestBody.Email)
-    if existingUser != nil {
-        api_scripts.RespondError(res, http.StatusConflict, "Пользователь уже существует")
-        return
-    }
+	existingUser, _ := uc.Rep.GetByEmail(requestBody.Email)
+	if existingUser != nil {
+		api_scripts.RespondError(res, http.StatusConflict, "Пользователь уже существует")
+		return
+	}
 
-    hashed, err := utils.HashPassword(requestBody.Password)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка хеширования пароля")
-        return
-    }
+	user := &models.User{
+		Name:       requestBody.Name,
+		Password:   requestBody.Password, // ← сохраняем как есть (уже хеш)
+		Email:      requestBody.Email,
+		IsActive:   false,
+		EmailToken: nil,
+	}
 
-    user := &models.User{
-        Name:       requestBody.Name,
-        Password:   hashed,
-        Email:      requestBody.Email,
-        IsActive:   false,
-        EmailToken: nil,
-    }
+	err = uc.Rep.Create(user)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка сохранения пользователя")
+		return
+	}
 
-    err = uc.Rep.Create(user)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка сохранения пользователя")
-        return
-    }
+	token, err := utils.GenerateRandomToken()
+	if err != nil {
+		log.Printf("❌ GenerateRandomToken ошибка: %v", err)
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации")
+		return
+	}
 
-    token, err := utils.GenerateRandomToken()
-    if err != nil {
-        log.Printf("❌ GenerateRandomToken ошибка: %v", err)
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации")
-        return
-    }
+	err = uc.Rep.UpdateEmailToken(user.ID, token)
+	if err != nil {
+		log.Printf("❌ UpdateEmailToken ошибка: %v", err)
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации")
+		return
+	}
 
-    err = uc.Rep.UpdateEmailToken(user.ID, token)
-    if err != nil {
-        log.Printf("❌ UpdateEmailToken ошибка: %v", err)
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации")
-        return
-    }
+	go func() {
+		confirmURL := fmt.Sprintf("http://localhost:8080/auth/confirm-email?token=%s", token)
 
-    go func() {
-        confirmURL := fmt.Sprintf("http://83.222.24.118/auth/confirm-email?token=%s", token)
-        
-        data := struct {
-            Name       string
-            ConfirmURL string
-        }{
-            Name:       user.Name,
-            ConfirmURL: confirmURL,
-        }
-        
-        body, err := uc.EmailService.RenderTemplate("welcome.html", data)
-        if err != nil {
-            return
-        }
-        
-        uc.EmailService.SendEmail(user.Email, "Подтверждение регистрации", body)
-    }()
+		data := struct {
+			Name       string
+			ConfirmURL string
+		}{
+			Name:       user.Name,
+			ConfirmURL: confirmURL,
+		}
 
-    api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
-        "id": user.ID,
-    })
+		body, err := uc.EmailService.RenderTemplate("welcome.html", data)
+		if err != nil {
+			return
+		}
+
+		uc.EmailService.SendEmail(user.Email, "Подтверждение регистрации", body)
+	}()
+
+	api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
+		"id": user.ID,
+	})
 }
 
 func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
