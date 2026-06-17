@@ -107,7 +107,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
     }
 
     go func() {
-        confirmURL := fmt.Sprintf("http://localhost:8080/auth/confirm-email?token=%s", token)
+        confirmURL := fmt.Sprintf("http://83.222.24.118/auth/confirm-email?token=%s", token)
         
         data := struct {
             Name       string
