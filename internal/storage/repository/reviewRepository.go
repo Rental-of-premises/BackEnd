@@ -16,8 +16,8 @@ func NewReviewRepository(db *sql.DB) *ReviewRepository {
 
 func (r *ReviewRepository) Create(review *models.Review) error {
 	query := `
-		INSERT INTO reviews (user_id, apartment_id, comment, stars, created_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO reviews (user_id, apartment_id, comment, stars)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at
 	`
 
@@ -26,7 +26,6 @@ func (r *ReviewRepository) Create(review *models.Review) error {
 		review.ApartmentID,
 		review.Comment,
 		review.Stars,
-		review.CreatedAt,
 	).Scan(&review.ID, &review.CreatedAt)
 
 	return err
@@ -58,6 +57,8 @@ func (r *ReviewRepository) GetByID(id int64) (*models.Review, error) {
 
 	return &review, nil
 }
+
+
 
 func (r *ReviewRepository) GetByApartment(apartmentID int64, limit, offset int) ([]*models.Review, error) {
 	query := `

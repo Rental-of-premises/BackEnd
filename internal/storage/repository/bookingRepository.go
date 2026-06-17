@@ -12,6 +12,7 @@ type BookingRepository struct {
 	Db *sql.DB
 }
 
+
 func NewBookingRepository(db *sql.DB) *BookingRepository {
 	return &BookingRepository{Db: db}
 }
@@ -56,28 +57,30 @@ func (r *BookingRepository) GetAll(filter *models.BookingFilter) ([]*models.Book
         argCounter++
     }
     
-    // SellerId - проверяем на nil
     if filter.SellerID != nil {
         query += fmt.Sprintf(" AND a.seller_id = $%d", argCounter)
         args = append(args, *filter.SellerID)
         argCounter++
     }
+
+    if filter.ApartmentID != nil {
+        query += fmt.Sprintf(" AND a.id = $%d", argCounter)
+        args = append(args, *filter.ApartmentID)
+        argCounter++
+    }
 	
-    // UserId - проверяем на nil
     if filter.UserID != nil {
         query += fmt.Sprintf(" AND b.user_id = $%d", argCounter)
         args = append(args, *filter.UserID)
         argCounter++
     }
     
-    // MinPrice - проверяем на nil
     if filter.MinPrice != nil {
         query += fmt.Sprintf(" AND price_per_hour *  EXTRACT(EPOCH FROM (b.time_to - b.time_from)) / 3600 >= $%d", argCounter)
         args = append(args, *filter.MinPrice)
         argCounter++
     }
     
-    // MaxPrice - проверяем на nil
     if filter.MaxPrice != nil {
         query += fmt.Sprintf(" AND price_per_hour *  EXTRACT(EPOCH FROM (b.time_to - b.time_from)) / 3600 <= $%d", argCounter)
         args = append(args, *filter.MaxPrice)
@@ -112,6 +115,21 @@ func (r *BookingRepository) GetAll(filter *models.BookingFilter) ([]*models.Book
 	}
 
 	return bookings, rows.Err()
+}
+
+func (r *BookingRepository)CheckReviewValidation(UserID, ApartmentID int64) (bool, error){
+	limit := 9999999
+	offset := 0
+	status := "completed"
+	filter := &models.BookingFilter{
+		Limit : &limit,
+		Offset : &offset,
+		Status : &status,
+		UserID : &UserID,
+		ApartmentID : &ApartmentID,
+	}
+	bookings, err := r.GetAll(filter)
+	return bookings != nil, err
 }
 
 func (r *BookingRepository) GetByID(id int64) (*models.Booking, error) {
@@ -277,10 +295,6 @@ func (r *BookingRepository) Delete(id int64) error {
 	return nil
 }
 
-// ========== НОВЫЙ МЕТОД ДЛЯ АВТОМАТИЧЕСКОГО ЗАВЕРШЕНИЯ БРОНИРОВАНИЙ ==========
-
-// CompletePastBookings обновляет статус для прошедших бронирований
-// Переводит все confirmed бронирования, у которых time_to < NOW(), в статус completed
 func (r *BookingRepository) CompletePastBookings() error {
 	query := `
 		UPDATE booking 

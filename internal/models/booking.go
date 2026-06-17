@@ -17,6 +17,7 @@ type Booking struct {
 type BookingFilter struct {
 	Status   *string `json:"status"`
 	SellerID *int64   `json:"seller_id"`
+	ApartmentID *int64   `json:"apartment_id"`
 	UserID *int64   `json:"user_id"`
     MinPrice *int64  `json:"min_price"`
     MaxPrice *int64  `json:"max_price"`
