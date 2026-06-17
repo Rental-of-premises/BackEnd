@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
-
 	"rent/internal/api/middleware"
 	api_scripts "rent/internal/api/scripts"
 	"rent/internal/models"
@@ -41,16 +39,24 @@ func (bc *BookingController) GetBooking(res http.ResponseWriter, req *http.Reque
 }
 
 func (bc *BookingController) GetBookingsByApartment(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	idStr := vars["id"]
-	apartmentID, err := strconv.ParseInt(idStr, 10, 64)
+	apartmentID, err := api_scripts.ParseID(req)
+
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID помещения")
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	limit := 9999999
-	offset := 0
+	limitStr := req.URL.Query().Get("limit")
+	offsetStr := req.URL.Query().Get("offset")
+	
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 10
+	}
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		offset = 0
+	}
 
 	allBookings, err := bc.Rep.GetByApartment(apartmentID, limit, offset)
 	if err != nil {
@@ -246,11 +252,9 @@ func (bc *BookingController) CancelBooking(res http.ResponseWriter, req *http.Re
 		return
 	}
 
-	vars := mux.Vars(req)
-	idStr := vars["id"]
-	bookingID, err := strconv.ParseInt(idStr, 10, 64)
+	bookingID, err := api_scripts.ParseID(req)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID бронирования")
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -293,11 +297,9 @@ func (bc *BookingController) ConfirmBookingBySeller(res http.ResponseWriter, req
 		return
 	}
 
-	vars := mux.Vars(req)
-	idStr := vars["id"]
-	bookingID, err := strconv.ParseInt(idStr, 10, 64)
+	bookingID, err := api_scripts.ParseID(req)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID бронирования")
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -350,11 +352,9 @@ func (bc *BookingController) RejectBookingBySeller(res http.ResponseWriter, req 
 		return
 	}
 
-	vars := mux.Vars(req)
-	idStr := vars["id"]
-	bookingID, err := strconv.ParseInt(idStr, 10, 64)
+	bookingID, err := api_scripts.ParseID(req)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID бронирования")
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
 

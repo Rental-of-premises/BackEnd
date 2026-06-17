@@ -93,10 +93,75 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 }
 
 func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
-	var filter models.BookingFilter
-	if err := json.NewDecoder(r.Body).Decode(&filter); err != nil {
-		return nil, fmt.Errorf("invalid filter")
+	filter := &models.BookingFilter{}
+	
+	if statusStr := r.URL.Query().Get("status"); statusStr != "" {
+		filter.Status = &statusStr
 	}
-
-	return &filter, nil
+	
+	if sellerIDStr := r.URL.Query().Get("seller_id"); sellerIDStr != "" {
+		sellerID, err := strconv.ParseInt(sellerIDStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid seller_id value, must be integer")
+		}
+		filter.SellerID = &sellerID
+	}
+	
+	if apartmentIDStr := r.URL.Query().Get("apartment_id"); apartmentIDStr != "" {
+		apartmentID, err := strconv.ParseInt(apartmentIDStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid apartment_id value, must be integer")
+		}
+		filter.ApartmentID = &apartmentID
+	}
+	
+	if userIDStr := r.URL.Query().Get("user_id"); userIDStr != "" {
+		userID, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid user_id value, must be integer")
+		}
+		filter.UserID = &userID
+	}
+	
+	if minPriceStr := r.URL.Query().Get("min_price"); minPriceStr != "" {
+		minPrice, err := strconv.ParseInt(minPriceStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid min_price value, must be integer")
+		}
+		filter.MinPrice = &minPrice
+	}
+	
+	if maxPriceStr := r.URL.Query().Get("max_price"); maxPriceStr != "" {
+		maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid max_price value, must be integer")
+		}
+		filter.MaxPrice = &maxPrice
+	}
+	
+	limit := 10
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		parsed, err := strconv.Atoi(limitStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid limit value, must be integer")
+		}
+		if parsed > 0 {
+			limit = parsed
+		}
+	}
+	filter.Limit = &limit
+	
+	offset := 0
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		parsed, err := strconv.Atoi(offsetStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid offset value, must be integer")
+		}
+		if parsed >= 0 {
+			offset = parsed
+		}
+	}
+	filter.Offset = &offset
+	
+	return filter, nil
 }

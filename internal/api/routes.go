@@ -78,6 +78,7 @@ func CreateAndRunRoutes() {
     r.HandleFunc("/apartments/{id}/reviews", reviewController.GetAllReviews).Methods("GET", "OPTIONS")
 
     r.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET", "OPTIONS")
+    r.HandleFunc("/apartments/{id}/calendar", bookingController.GetBookingsByApartment).Methods("GET", "OPTIONS")
 
     // ========== ЗАЩИЩЕННЫЕ МАРШРУТЫ (с проверкой токена) ==========
     protected := r.PathPrefix("/api").Subrouter()
