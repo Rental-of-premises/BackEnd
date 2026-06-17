@@ -276,3 +276,31 @@ func (r *BookingRepository) Delete(id int64) error {
 
 	return nil
 }
+
+// ========== НОВЫЙ МЕТОД ДЛЯ АВТОМАТИЧЕСКОГО ЗАВЕРШЕНИЯ БРОНИРОВАНИЙ ==========
+
+// CompletePastBookings обновляет статус для прошедших бронирований
+// Переводит все confirmed бронирования, у которых time_to < NOW(), в статус completed
+func (r *BookingRepository) CompletePastBookings() error {
+	query := `
+		UPDATE booking 
+		SET status = 'completed' 
+		WHERE status = 'confirmed' 
+		AND time_to < NOW()
+	`
+	result, err := r.Db.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	
+	if rows > 0 {
+		fmt.Printf("✅ Автоматически завершено %d бронирований\n", rows)
+	}
+
+	return nil
+}
