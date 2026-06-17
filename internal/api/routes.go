@@ -15,7 +15,10 @@ import (
 )
 
 func CreateAndRunRoutes() {
-    r := mux.NewRouter()
+    r1 := mux.NewRouter()
+    
+    r := r1.PathPrefix("/api").Subrouter()
+
     r.Use(middleware.CORSMiddleware)
     r.Use(func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

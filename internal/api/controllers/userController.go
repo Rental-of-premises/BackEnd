@@ -73,7 +73,6 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 
 	user := &models.User{
 		Name:       requestBody.Name,
-		Password:   requestBody.Password,
 		Email:      requestBody.Email,
 		IsActive:   false,
 		EmailToken: nil,
@@ -145,7 +144,6 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
 		api_scripts.RespondError(res, http.StatusUnauthorized, "Подтвердите email перед входом. Проверьте почту.")
 		return
 	}
-
 	if user.Password != requestBody.Password {
 		api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный пароль")
 		return
