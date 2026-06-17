@@ -25,7 +25,7 @@ func ParseID(r *http.Request) (int64, error) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("invalid ID")
+		return 0, fmt.Errorf("Неверный ID")
 	}
 	return id, nil
 }

@@ -24,7 +24,6 @@ func CreateAndRunRoutes() {
         })
     })
 
-    // Загружаем конфиг и создаём email сервис
     cfg := config.Load()
     db := repository.GetUserRepository().Db
     if db == nil {
@@ -48,7 +47,6 @@ func CreateAndRunRoutes() {
     }
     emailService := email.NewEmailService(cfg)
 
-    // Контроллеры
     userController := &api_controllers.UserController{
         Rep:          repository.GetUserRepository(),
         EmailService: emailService,
@@ -62,8 +60,11 @@ func CreateAndRunRoutes() {
         Rep:           repository.GetBookingRepository(),
         ApartmentRepo: repository.GetApartmentRepository(),
     }
-    
-    // reviewController := &api_controllers.UserController{repository.GetUserRepository()}
+
+    reviewController := &api_controllers.ReviewController{
+        Rep:           repository.GetReviewRepository(),
+        ApartmentRepo: repository.GetApartmentRepository(),
+    }
 
     // ========== ПУБЛИЧНЫЕ МАРШРУТЫ (без токена) ==========
     r.HandleFunc("/users/{id}", userController.GetUser).Methods("GET", "OPTIONS")
@@ -72,7 +73,9 @@ func CreateAndRunRoutes() {
 	r.HandleFunc("/auth/confirm-email", userController.ConfirmEmail).Methods("GET", "OPTIONS")
 
     r.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET", "OPTIONS")
-    r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("POST", "OPTIONS")
+    r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("GET", "OPTIONS")
+    
+    r.HandleFunc("/apartments/{id}/reviews", reviewController.GetAllReviews).Methods("GET", "OPTIONS")
 
     r.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET", "OPTIONS")
 
@@ -94,6 +97,9 @@ func CreateAndRunRoutes() {
     protected.HandleFunc("/account/bookings/{id}/confirm", bookingController.ConfirmBookingBySeller).Methods("PATCH", "OPTIONS")
     protected.HandleFunc("/account/bookings/{id}/reject", bookingController.RejectBookingBySeller).Methods("PATCH", "OPTIONS")
     protected.HandleFunc("/account/bookings", bookingController.GetBookings).Methods("GET", "OPTIONS")
+
+    protected.HandleFunc("/apartments/{id}/new-review", reviewController.CreateReview).Methods("POST", "OPTIONS")
+    protected.HandleFunc("/account/delete-review/{id}", reviewController.DeleteReview).Methods("DELETE", "OPTIONS")
 
     port := config.GetSingletonConfig().ServerPort
     log.Printf("Server starting on port %s", port)

@@ -29,7 +29,7 @@ func (uc *UserController) GetUser(res http.ResponseWriter, req *http.Request) {
     
     user, err := uc.Rep.GetByID(id)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Failed to get user")
+        api_scripts.RespondError(res, http.StatusInternalServerError, err.Error())
         return
     }
     if user == nil {
@@ -50,7 +50,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 
     err := json.NewDecoder(req.Body).Decode(&requestBody)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON: " + err.Error())
         return
     }
 
@@ -74,7 +74,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 
     hashed, err := utils.HashPassword(requestBody.Password)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка хеширования пароля")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка хеширования пароля: " + err.Error())
         return
     }
 
@@ -88,21 +88,21 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 
     err = uc.Rep.Create(user)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка сохранения пользователя")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка сохранения пользователя: " + err.Error())
         return
     }
 
     token, err := utils.GenerateRandomToken()
     if err != nil {
         log.Printf("❌ GenerateRandomToken ошибка: %v", err)
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации: " + err.Error())
         return
     }
 
     err = uc.Rep.UpdateEmailToken(user.ID, token)
     if err != nil {
         log.Printf("❌ UpdateEmailToken ошибка: %v", err)
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при регистрации: " + err.Error())
         return
     }
 
@@ -138,13 +138,17 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
 
     err := json.NewDecoder(req.Body).Decode(&requestBody)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
+        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON: " + err.Error())
         return
     }
 
 
     user, err := uc.Rep.GetByEmail(requestBody.Email)
-    if err != nil || user == nil {
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Ошибка при поиске пользователя по почте: " + err.Error())
+        return
+    }
+    if user == nil {
         api_scripts.RespondError(res, http.StatusUnauthorized, "Пользователь не существует")
         return
     }
@@ -156,13 +160,13 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
 
     err = utils.CheckPassword(requestBody.Password, user.Password)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный пароль")
+        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный пароль: " + err.Error())
         return
     }
 
     token, err := utils.GenerateJWT(user.ID, user.Email)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка генерации токена")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка генерации токена: " + err.Error())
         return
     }
 
@@ -211,7 +215,7 @@ func (uc * UserController) DeleteAccount(res http.ResponseWriter, req *http.Requ
 
     user, err := uc.Rep.GetByID(userID)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске пользователя")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске пользователя: " + err.Error())
         return
     }
     if user == nil {
@@ -221,7 +225,7 @@ func (uc * UserController) DeleteAccount(res http.ResponseWriter, req *http.Requ
 
     err = uc.Rep.Delete(userID)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении аккаунта")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении аккаунта: " + err.Error())
         return
     }
 
@@ -239,7 +243,7 @@ func (uc *UserController) ConfirmEmail(res http.ResponseWriter, req *http.Reques
 
     userID, err := uc.Rep.ActivateUser(token)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка активации")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка активации: " + err.Error())
         return
     }
     if userID == 0 {
