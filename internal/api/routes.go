@@ -84,7 +84,7 @@ func CreateAndRunRoutes() {
     r.HandleFunc("/apartments/{id}/calendar", bookingController.GetBookingsByApartment).Methods("GET", "OPTIONS")
 
     // ========== ЗАЩИЩЕННЫЕ МАРШРУТЫ (с проверкой токена) ==========
-    protected := r.PathPrefix("/api").Subrouter()
+    protected := r1.PathPrefix("/api").Subrouter()
     protected.Use(middleware.AuthMiddleware)
 
     protected.HandleFunc("/auth/logout", userController.LogOut).Methods("POST", "OPTIONS")
@@ -107,5 +107,5 @@ func CreateAndRunRoutes() {
 
     port := config.GetSingletonConfig().ServerPort
     log.Printf("Server starting on port %s", port)
-    log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), r))
+    log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), r1))
 }
