@@ -29,7 +29,7 @@ func (uc *UserController) GetUser(res http.ResponseWriter, req *http.Request) {
 
 	user, err := uc.Rep.GetByID(id)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusInternalServerError, "Failed to get user")
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Failed to get user: " + err.Error())
 		return
 	}
 	if user == nil {

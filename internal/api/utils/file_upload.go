@@ -1,0 +1,108 @@
+package utils
+
+import (
+    "fmt"
+    "io"
+    "mime/multipart"
+    "os"
+    "path/filepath"
+    "strings"
+    "time"
+
+    "rent/internal/models"
+)
+
+const (
+    MaxFileSize = 5 << 20
+    UploadDir   = "./uploads/apartments"
+)
+
+var AllowedExtensions = map[string]bool{
+    ".jpg":  true,
+    ".jpeg": true,
+    ".png":  true,
+    ".webp": true,
+    ".gif": true,
+}
+
+func ValidateImage(fileHeader *multipart.FileHeader) error {
+    if fileHeader.Size > MaxFileSize {
+        return fmt.Errorf("размер файла не должен превышать 5MB")
+    }
+
+    ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+    if !AllowedExtensions[ext] {
+        return fmt.Errorf("допустимые форматы: jpg, jpeg, png, webp, gif")
+    }
+
+    return nil
+}
+
+func SaveUploadedFiles(files []*multipart.FileHeader, prefix string) ([]*models.ApartmentImage, error) {
+
+    if err := os.MkdirAll(UploadDir, 0755); err != nil {
+        return nil, fmt.Errorf("ошибка создания папки для загрузок: %w", err)
+    }
+
+    var uploadedImages []*models.ApartmentImage
+    timestamp := time.Now().Unix()
+
+    for idx, fileHeader := range files {
+        if err := ValidateImage(fileHeader); err != nil {
+        	return nil, err
+        }
+
+        file, err := fileHeader.Open()
+        if err != nil {
+        	return nil, err
+        }
+        defer file.Close()
+
+        ext := filepath.Ext(fileHeader.Filename) 
+		
+        fileName := fmt.Sprintf("%s_%d_%d%s", prefix, timestamp, idx, ext)
+        filePath := filepath.Join(UploadDir, fileName)
+
+        dst, err := os.Create(filePath)
+        if err != nil {
+        	return nil, err
+        }
+        defer dst.Close()
+
+        if _, err := io.Copy(dst, file); err != nil {
+        	return nil, err
+        }
+
+        imageURL := fmt.Sprintf("/%s/%s", UploadDir, fileName)
+
+        uploadedImages = append(uploadedImages, &models.ApartmentImage{
+            ImageURL: imageURL,
+            Position: idx,
+        })
+    }
+
+    return uploadedImages, nil
+}
+
+func DeleteFile(filePath string) error {
+    if err := os.Remove(filePath); err != nil {
+        if os.IsNotExist(err) {
+            return nil 
+        }
+        return fmt.Errorf("ошибка удаления файла: %w", err)
+    }
+    return nil
+}
+
+func DeleteMultipleFiles(filePaths []string) error {
+    var errors []string
+    for _, path := range filePaths {
+        if err := DeleteFile(path); err != nil {
+            errors = append(errors, err.Error())
+        }
+    }
+    if len(errors) > 0 {
+        return fmt.Errorf("ошибки при удалении: %s", strings.Join(errors, "; "))
+    }
+    return nil
+}

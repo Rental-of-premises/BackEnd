@@ -28,6 +28,15 @@ CREATE TABLE apartments (
 CREATE INDEX idx_apartments_seller ON apartments(seller_id);
 CREATE INDEX idx_apartments_active ON apartments(is_active);
 
+CREATE TABLE apartment_images (
+    id BIGSERIAL PRIMARY KEY,
+    apartment_id BIGINT NOT NULL REFERENCES apartments(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    position INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_apartment_images_apartment ON apartment_images(apartment_id);
+
 CREATE TABLE reviews (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT,
