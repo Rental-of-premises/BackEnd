@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
 
 	"rent/internal/api/middleware"
 	api_scripts "rent/internal/api/scripts"
@@ -40,29 +39,34 @@ func (bc *BookingController) GetBooking(res http.ResponseWriter, req *http.Reque
 	api_scripts.RespondJSON(res, http.StatusOK, booking)
 }
 
-// GetBookingsByApartment возвращает только активные бронирования для помещения
-// (waiting, confirmed, completed) — отменённые и отклонённые не показываем
+
 func (bc *BookingController) GetBookingsByApartment(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	idStr := vars["id"]
-	apartmentID, err := strconv.ParseInt(idStr, 10, 64)
+	apartmentID, err := api_scripts.ParseID(req)
+
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID помещения")
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	limit := 9999999
-	offset := 0
+	limitStr := req.URL.Query().Get("limit")
+	offsetStr := req.URL.Query().Get("offset")
+	
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 10
+	}
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		offset = 0
+	}
 
-	// Получаем все бронирования для помещения
 	allBookings, err := bc.Rep.GetByApartment(apartmentID, limit, offset)
 	if err != nil {
 		api_scripts.RespondError(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Фильтруем: показываем только waiting, confirmed, completed
-	// Отменённые (cancelled) и отклонённые (rejected) не показываем
+
 	var activeBookings []*models.Booking
 	for _, b := range allBookings {
 		if b.Status == "waiting" || b.Status == "confirmed" || b.Status == "completed" {
@@ -89,8 +93,18 @@ func (bc *BookingController) GetMyBookings(res http.ResponseWriter, req *http.Re
 		statusFilter = "active"
 	}
 
-	limit := 9999999
-	offset := 0
+	limitStr := req.URL.Query().Get("limit")
+	offsetStr := req.URL.Query().Get("offset")
+	
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 10
+	}
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		offset = 0
+	}
+
 
 	filter := &models.BookingFilter{
 		UserID: &userID,
@@ -208,7 +222,7 @@ func (bc *BookingController) CreateBooking(res http.ResponseWriter, req *http.Re
 	requestBody.Status = "waiting"
 	check, err := bc.Rep.CheckAvailability(requestBody.ApartmentID, requestBody.TimeFrom, requestBody.TimeTo)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка при проверке занятости брони: " + err.Error())
 		return
 	}
 	if !check {
@@ -226,7 +240,7 @@ func (bc *BookingController) CreateBooking(res http.ResponseWriter, req *http.Re
 
 	err = bc.Rep.Create(booking)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка при создании брони: " + err.Error())
 		return
 	}
 
@@ -242,11 +256,9 @@ func (bc *BookingController) CancelBooking(res http.ResponseWriter, req *http.Re
 		return
 	}
 
-	vars := mux.Vars(req)
-	idStr := vars["id"]
-	bookingID, err := strconv.ParseInt(idStr, 10, 64)
+	bookingID, err := api_scripts.ParseID(req)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID бронирования")
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -289,11 +301,10 @@ func (bc *BookingController) ConfirmBookingBySeller(res http.ResponseWriter, req
 		return
 	}
 
-	vars := mux.Vars(req)
-	idStr := vars["id"]
-	bookingID, err := strconv.ParseInt(idStr, 10, 64)
+	bookingID, err := api_scripts.ParseID(req)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID бронирования")
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+
 		return
 	}
 
@@ -346,11 +357,10 @@ func (bc *BookingController) RejectBookingBySeller(res http.ResponseWriter, req 
 		return
 	}
 
-	vars := mux.Vars(req)
-	idStr := vars["id"]
-	bookingID, err := strconv.ParseInt(idStr, 10, 64)
+	bookingID, err := api_scripts.ParseID(req)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный ID бронирования")
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+
 		return
 	}
 

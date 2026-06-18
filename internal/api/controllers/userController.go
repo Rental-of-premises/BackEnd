@@ -60,8 +60,6 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Пароль уже захеширован на фронтенде — сохраняем как есть
-	// Просто проверяем, что длина соответствует хешу bcrypt
 	if len(requestBody.Password) < 60 {
 		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный формат пароля")
 		return
@@ -75,7 +73,6 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 
 	user := &models.User{
 		Name:       requestBody.Name,
-		Password:   requestBody.Password, // ← сохраняем как есть (уже хеш)
 		Email:      requestBody.Email,
 		IsActive:   false,
 		EmailToken: nil,
@@ -147,8 +144,6 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
 		api_scripts.RespondError(res, http.StatusUnauthorized, "Подтвердите email перед входом. Проверьте почту.")
 		return
 	}
-
-	// Сравниваем хеши (пароль уже захеширован на фронтенде)
 	if user.Password != requestBody.Password {
 		api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный пароль")
 		return
