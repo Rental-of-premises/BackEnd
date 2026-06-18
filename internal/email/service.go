@@ -3,6 +3,7 @@ package email
 import (
 	"bytes"
     "fmt"
+    "log"
     "html/template"
     "path/filepath"
 
