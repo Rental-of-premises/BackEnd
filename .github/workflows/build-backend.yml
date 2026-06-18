@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - server-fixes
 
 jobs:
   build:
@@ -30,3 +29,15 @@ jobs:
           file: Dockerfile.go
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/team3-backend:latest
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/team3-backend:latest
+            docker rm -f team3-backend
+            docker run -d --name team3-backend --network backend_postgres_network -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/team3-backend:latest
+            docker cp /root/backend/.env team3-backend:/app/.env && docker restart team3-backend
