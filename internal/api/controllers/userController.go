@@ -114,7 +114,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			return
 		}
-
+		log.Printf("📧 Отправка письма на %s", user.Email)
 		uc.EmailService.SendEmail(user.Email, "Подтверждение регистрации", body)
 	}()
 
