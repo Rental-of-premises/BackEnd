@@ -82,21 +82,18 @@ func (r *ApartmentRepository) GetAll(filter *models.ApartmentFilter) ([]*models.
         argCounter++
     }
     
-    // SellerId - проверяем на nil
     if filter.SellerID != nil {
         query += fmt.Sprintf(" AND seller_id = $%d", argCounter)
         args = append(args, *filter.SellerID)
         argCounter++
     }
     
-    // MinPrice - проверяем на nil
     if filter.MinPrice != nil {
         query += fmt.Sprintf(" AND price_per_hour >= $%d", argCounter)
         args = append(args, *filter.MinPrice)
         argCounter++
     }
     
-    // MaxPrice - проверяем на nil
     if filter.MaxPrice != nil {
         query += fmt.Sprintf(" AND price_per_hour <= $%d", argCounter)
         args = append(args, *filter.MaxPrice)

@@ -9,6 +9,7 @@ var apartmentRepository *ApartmentRepository = nil
 var bookingRepository *BookingRepository = nil
 var reviewRepository *ReviewRepository = nil
 var userRepository *UserRepository = nil
+var apartmentImageRepository *ApartmentImageRepository = nil
 
 func getDb() *sql.DB {
 	d, err := db.GetSingletonDB()
@@ -49,4 +50,12 @@ func GetUserRepository() *UserRepository {
 	}
 
 	return userRepository
+}
+
+func GetApartmentImageRepository() *ApartmentImageRepository {
+	if apartmentImageRepository == nil {
+		apartmentImageRepository = &ApartmentImageRepository{Db: getDb()}
+	}
+
+	return apartmentImageRepository
 }

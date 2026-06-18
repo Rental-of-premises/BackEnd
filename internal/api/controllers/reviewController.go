@@ -130,7 +130,23 @@ func (rc *ReviewController) DeleteReview(res http.ResponseWriter, req *http.Requ
         return
     }
 
-    err := rc.Rep.Delete(userID)
+	id, err := api_scripts.ParseID(req)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Не удалось отпарсить айди: " + err.Error())
+        return
+    }
+
+	review, err := rc.Rep.GetByID(id)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Не удалось найти отзыв: " + err.Error())
+        return
+    }
+	if *review.UserID != userID {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Нет прав на удаление")
+        return
+	}
+
+    err = rc.Rep.Delete(id)
     if err != nil {
         api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении отзыва: " + err.Error())
         return

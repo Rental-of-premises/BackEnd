@@ -8,6 +8,7 @@ import (
     "github.com/gorilla/mux"
 
     api_controllers "rent/internal/api/controllers"
+    api_scripts "rent/internal/api/scripts"
     "rent/internal/api/middleware"
     "rent/internal/config"
     "rent/internal/email"
@@ -46,6 +47,7 @@ func CreateAndRunRoutes() {
         log.Printf("📊 В таблице users: %d записей", count)
     }
     emailService := email.NewEmailService(cfg)
+    iRepo := repository.GetApartmentImageRepository()
 
     userController := &api_controllers.UserController{
         Rep:          repository.GetUserRepository(),
@@ -54,6 +56,7 @@ func CreateAndRunRoutes() {
     
     apartmentController := &api_controllers.ApartmentController{
         Rep: repository.GetApartmentRepository(),
+        IH : api_scripts.NewImageHelper(iRepo),
     }
     
     bookingController := &api_controllers.BookingController{
@@ -91,6 +94,9 @@ func CreateAndRunRoutes() {
     protected.HandleFunc("/account/new-apartment", apartmentController.CreateApartment).Methods("POST", "OPTIONS")
     protected.HandleFunc("/account/apartments/{id}/edit", apartmentController.UpdateApartment).Methods("PATCH", "OPTIONS")
     protected.HandleFunc("/account/apartments/{id}/delete", apartmentController.DeleteApartment).Methods("DELETE", "OPTIONS")
+    protected.HandleFunc("/account/apartments/{id}/upload-images", apartmentController.UploadApartmentImages).Methods("POST", "OPTIONS")
+    protected.HandleFunc("/account/apartments/{id}/update-images", apartmentController.UpdateApartmentImages).Methods("PATCH", "OPTIONS")
+    protected.HandleFunc("/account/apartments/{id}/delete-images", apartmentController.DeleteAllApartmentImages).Methods("DELETE", "OPTIONS")
 
     protected.HandleFunc("/account/my-bookings", bookingController.GetMyBookings).Methods("GET", "OPTIONS")
     protected.HandleFunc("/account/new-booking", bookingController.CreateBooking).Methods("POST", "OPTIONS")

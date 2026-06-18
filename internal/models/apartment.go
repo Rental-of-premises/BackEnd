@@ -23,3 +23,11 @@ type ApartmentFilter struct {
     Limit *int  `json:"limit"`
 	Offset *int  `json:"offset"` 
 }
+
+type ApartmentImage struct {
+    ID          int64     `json:"id"`
+    ApartmentID int64     `json:"apartment_id"`
+    ImageURL    string    `json:"image_url"`
+    Position    int       `json:"position"`
+    CreatedAt  time.Time `json:"created_at"`
+}
