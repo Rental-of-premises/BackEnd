@@ -6,6 +6,7 @@ import (
     "log"
     "html/template"
     "path/filepath"
+    "crypto/tls"
 
     "rent/internal/config"
 
@@ -21,6 +22,7 @@ type EmailService struct {
 
 func NewEmailService(cfg *config.Config) *EmailService {
 	dialer := gomail.NewDialer(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPassword)
+    dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	return &EmailService{
 		dialer:   dialer,
