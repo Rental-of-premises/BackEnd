@@ -23,7 +23,6 @@ type EmailService struct {
 func NewEmailService(cfg *config.Config) *EmailService {
 	dialer := gomail.NewDialer(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPassword)
     dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-    dialer.Auth = nil
 
 	return &EmailService{
 		dialer:   dialer,
