@@ -76,7 +76,7 @@ func CreateAndRunRoutes() {
 	r.HandleFunc("/auth/confirm-email", userController.ConfirmEmail).Methods("GET", "OPTIONS")
 
     r.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET", "OPTIONS")
-    r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("GET", "OPTIONS")
+    r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("POST", "OPTIONS")
     
     r.HandleFunc("/apartments/{id}/reviews", reviewController.GetAllReviews).Methods("GET", "OPTIONS")
 
