@@ -65,6 +65,7 @@ func (s *EmailService) SendWelcomeEmail(to, name string) error {
 }
 
 func (s *EmailService) SendEmail(to, subject, body string) error {
+    log.Printf("📤 Отправка письма через SMTP на %s", to)
 	m := gomail.NewMessage()
 	m.SetHeader("From", fmt.Sprintf("%s <%s>", s.fromName, s.from))
 	m.SetHeader("To", to)
