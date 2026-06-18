@@ -73,8 +73,8 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 
 	user := &models.User{
 		Name:       requestBody.Name,
-		Email:      requestBody.Email,
 		Password:   requestBody.Password,
+		Email:      requestBody.Email,
 		IsActive:   false,
 		EmailToken: nil,
 	}
