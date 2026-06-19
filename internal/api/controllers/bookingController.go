@@ -216,13 +216,13 @@ func (bc *BookingController) CreateBooking(res http.ResponseWriter, req *http.Re
 
 	requestBody.UserID = userID
 	requestBody.Status = "waiting"
-	check, err := bc.Rep.CheckAvailability(requestBody.ApartmentID, requestBody.TimeFrom, requestBody.TimeTo)
+	check, err := bc.Rep.CheckAvailability(requestBody.ApartmentID, requestBody.TimeFrom, requestBody.TimeTo, userID)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка при проверке занятости брони: " + err.Error())
+		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка при проверке возможности брони: " + err.Error())
 		return
 	}
 	if !check {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Брони пересекаются")
+		api_scripts.RespondError(res, http.StatusBadRequest, "Нельзя забронировать")
 		return
 	}
 

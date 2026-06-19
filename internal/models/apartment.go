@@ -13,6 +13,9 @@ type Apartment struct {
 	PricePerHour int64    `json:"price_per_hour"`
 	IsActive     bool      `json:"is_active"`
 	CreatedAt    time.Time `json:"created_at"`
+	Metro        string    `json:"metro"`
+	Address      string    `json:"address"`
+	Amenities    []*Amenity `json:"amenities,omitempty"`
 }
 
 type ApartmentFilter struct {
@@ -22,6 +25,7 @@ type ApartmentFilter struct {
     MaxPrice *int64  `json:"max_price"`
     Limit *int  `json:"limit"`
 	Offset *int  `json:"offset"` 
+	Amenities []int64 `json:"amenities"`
 }
 
 type ApartmentImage struct {
@@ -29,5 +33,15 @@ type ApartmentImage struct {
     ApartmentID int64     `json:"apartment_id"`
     ImageURL    string    `json:"image_url"`
     Position    int       `json:"position"`
-    CreatedAt  time.Time `json:"created_at"`
+}
+
+type Amenity struct {
+    ID        int64     `json:"id"`
+    Name      string    `json:"name"`
+    Icon      string    `json:"icon"`
+}
+
+type ApartmentAmenity struct {
+    ApartmentID int64 `json:"apartment_id"`
+    AmenityID   int64 `json:"amenity_id"`
 }

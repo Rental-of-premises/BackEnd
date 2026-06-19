@@ -88,6 +88,16 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 		}
 	}
 	filter.Offset = &offset
+
+	amenityIDs := r.URL.Query()["amenities"]
+	if len(amenityIDs) > 0 {
+		for _, idStr := range amenityIDs {
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err == nil {
+				filter.Amenities = append(filter.Amenities, id)
+			}
+		}
+	}
 	
 	return filter, nil
 }

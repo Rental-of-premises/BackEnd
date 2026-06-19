@@ -14,3 +14,8 @@ type User struct {
     EmailToken *string    `json:"email_token,omitempty"`
 }
 
+// type Avatar struct {
+//     ID          int64     `json:"id"`
+//     UserID      int64     `json:"user_id"`
+//     ImageURL    string    `json:"image_url"`
+// }

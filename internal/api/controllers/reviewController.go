@@ -92,15 +92,15 @@ func (rc *ReviewController) CreateReview(res http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	// valid, err := rc.BookingRepo.CheckReviewValidation(requestBody.UserID, requestBody.ApartmentID)
-	// if(err != nil) {
-	// 	api_scripts.RespondError(res, http.StatusUnauthorized, "Ошибка при проверке валидности написания отзыва: " + err.Error())
-	// 	return
-	// }
-	// if(!valid) {
-	// 	api_scripts.RespondError(res, http.StatusUnauthorized, "Нельзя писать отзыв к непроверенным объявлениям")
-	// 	return
-	// }
+	valid, err := rc.BookingRepo.CheckReviewValidation(requestBody.UserID, requestBody.ApartmentID)
+	if(err != nil) {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Ошибка при проверке валидности написания отзыва: " + err.Error())
+		return
+	}
+	if(!valid) {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Нельзя написать отзыв")
+		return
+	}
 
 	requestBody.UserID = userID
 	requestBody.ApartmentID = apartmentID

@@ -77,6 +77,8 @@ func CreateAndRunRoutes() {
 
     r.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET", "OPTIONS")
     r.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("GET", "OPTIONS")
+    r.HandleFunc("/amenities", apartmentController.GetAllAmenities).Methods("GET", "OPTIONS")
+    r.HandleFunc("/amenity/{id}", apartmentController.GetAmenity).Methods("GET", "OPTIONS")
     
     r.HandleFunc("/apartments/{id}/reviews", reviewController.GetAllReviews).Methods("GET", "OPTIONS")
 
@@ -89,6 +91,10 @@ func CreateAndRunRoutes() {
 
     protected.HandleFunc("/auth/logout", userController.LogOut).Methods("POST", "OPTIONS")
     protected.HandleFunc("/auth/delete", userController.DeleteAccount).Methods("DELETE", "OPTIONS")
+    // protected.HandleFunc("/api/account/settings/profile/avatar", userController.ChangeAvatar).Methods("PATCH", "OPTIONS")
+    // protected.HandleFunc("/api/account/settings/profile/name", userController.ChangeName).Methods("PATCH", "OPTIONS")
+    // protected.HandleFunc("/api/account/settings/security/password", userController.ChangePassword).Methods("PATCH", "OPTIONS")
+    protected.HandleFunc("/auth/logout", userController.LogOut).Methods("POST", "OPTIONS")
 
     protected.HandleFunc("/account/my-apartments", apartmentController.GetMyApartments).Methods("GET", "OPTIONS")
     protected.HandleFunc("/account/new-apartment", apartmentController.CreateApartment).Methods("POST", "OPTIONS")

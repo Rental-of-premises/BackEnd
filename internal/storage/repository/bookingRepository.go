@@ -231,9 +231,9 @@ func (r *BookingRepository) GetByApartment(apartmentID int64, limit, offset int)
 	return bookings, rows.Err()
 }
 
-func (r *BookingRepository) CheckAvailability(apartmentID int64, timeFrom, timeTo time.Time) (bool, error) {
+func (r *BookingRepository) CheckAvailability(apartmentID int64, timeFrom, timeTo time.Time, userID int64) (bool, error) {
 	query := `
-        SELECT COUNT(*)
+        SELECT COUNT(*), seller_id
         FROM booking
         WHERE apartment_id = $1
         AND status NOT IN ('cancelled', 'rejected')
@@ -245,12 +245,12 @@ func (r *BookingRepository) CheckAvailability(apartmentID int64, timeFrom, timeT
     `
 
 	var count int
-	err := r.Db.QueryRow(query, apartmentID, timeFrom, timeTo).Scan(&count)
+	var sellerID int64
+	err := r.Db.QueryRow(query, apartmentID, timeFrom, timeTo).Scan(&count, &sellerID)
 	if err != nil {
 		return false, err
 	}
-
-	return count == 0, nil
+	return count == 0 && sellerID != userID, nil
 }
 
 func (r *BookingRepository) UpdateStatus(id int64, status string) error {
