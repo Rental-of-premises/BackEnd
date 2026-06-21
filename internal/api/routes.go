@@ -85,18 +85,20 @@ func CreateAndRunRoutes() {
 	}
 
 	// ========== ПУБЛИЧНЫЕ МАРШРУТЫ ==========
-	apiRouter.HandleFunc("/users/{id}", userController.GetUser).Methods("GET", "OPTIONS")
-	apiRouter.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST", "OPTIONS")
-	apiRouter.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST", "OPTIONS")
+    apiRouter.HandleFunc("/users/{id}", userController.GetUser).Methods("GET", "OPTIONS")
+    apiRouter.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST", "OPTIONS")
+    apiRouter.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST", "OPTIONS")
 	apiRouter.HandleFunc("/auth/confirm-email", userController.ConfirmEmail).Methods("GET", "OPTIONS")
+    
+    apiRouter.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET", "OPTIONS")
+    apiRouter.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("GET", "OPTIONS")
+    apiRouter.HandleFunc("/amenities", apartmentController.GetAllAmenities).Methods("GET", "OPTIONS")
+    apiRouter.HandleFunc("/amenity/{id}", apartmentController.GetAmenity).Methods("GET", "OPTIONS")
+    
+    apiRouter.HandleFunc("/apartments/{id}/reviews", reviewController.GetAllReviews).Methods("GET", "OPTIONS")
 
-	apiRouter.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET", "OPTIONS")
-	apiRouter.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("GET", "OPTIONS")
-
-	apiRouter.HandleFunc("/apartments/{id}/reviews", reviewController.GetAllReviews).Methods("GET", "OPTIONS")
-
-	apiRouter.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET", "OPTIONS")
-	apiRouter.HandleFunc("/apartments/{id}/calendar", bookingController.GetBookingsByApartment).Methods("GET", "OPTIONS")
+    apiRouter.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET", "OPTIONS")
+    apiRouter.HandleFunc("/apartments/{id}/calendar", bookingController.GetBookingsByApartment).Methods("GET", "OPTIONS")
 
 	// ========== ЗАЩИЩЕННЫЕ МАРШРУТЫ ==========
 	protectedRouter := mainRouter.PathPrefix("/api").Subrouter()

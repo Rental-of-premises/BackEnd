@@ -2,7 +2,7 @@ package repository
 
 import (
 	"database/sql"
-	db "rent/internal/storage"
+	"rent/internal/storage/db"
 )
 
 var apartmentRepository *ApartmentRepository = nil
@@ -10,6 +10,7 @@ var bookingRepository *BookingRepository = nil
 var reviewRepository *ReviewRepository = nil
 var userRepository *UserRepository = nil
 var apartmentImageRepository *ApartmentImageRepository = nil
+var avatarRepository *AvatarRepository = nil
 
 func getDb() *sql.DB {
 	d, err := db.GetSingletonDB()
@@ -58,4 +59,12 @@ func GetApartmentImageRepository() *ApartmentImageRepository {
 	}
 
 	return apartmentImageRepository
+}
+
+func GetAvatarRepository() *AvatarRepository {
+	if avatarRepository == nil {
+		avatarRepository = &AvatarRepository{Db: getDb()}
+	}
+
+	return avatarRepository
 }

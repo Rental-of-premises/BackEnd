@@ -4,7 +4,7 @@ import (
 	"log"
 	"rent/internal/api"
 	"rent/internal/storage/repository"
-
+	"rent/internal/storage/migrations"
 )
 
 
@@ -14,6 +14,10 @@ func runController() {
 
 
 func main() {
+	if err := migrations.CreateTablesIfNotExist(); err != nil {
+		log.Fatalf("❌ Ошибка создания таблиц: %v", err)
+	}
+
 	log.Println("🔄 Проверка прошедших бронирований...")
 	
 	bookingRepo := repository.GetBookingRepository()

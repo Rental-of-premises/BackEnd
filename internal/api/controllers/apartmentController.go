@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
 
 	"rent/internal/api/middleware"
+	"rent/internal/api/utils"
 	api_scripts "rent/internal/api/scripts"
 	"rent/internal/models"
 	"rent/internal/storage/repository"
@@ -20,20 +20,19 @@ type ApartmentController struct {
 func (ac *ApartmentController) GetApartment(res http.ResponseWriter, req *http.Request) {
 	id, err := api_scripts.ParseID(req)
 
-	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	apartment, err := ac.Rep.GetByID(id)
-	if err != nil {
-		api_scripts.RespondError(res, http.StatusInternalServerError, "Failed to get apartment")
-		return
-	}
-	if apartment == nil {
-		api_scripts.RespondError(res, http.StatusNotFound, "Apartment not found")
-		return
-	}
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+        return
+    }
+    apartment, err := ac.Rep.GetByID(id)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка получения объявления: "+err.Error())
+        return
+    }
+    if apartment == nil {
+        api_scripts.RespondError(res, http.StatusNotFound, "Apartment not found")
+        return
+    }
 
 	images, err := ac.IH.GetImagesByApartment(apartment)
 	if err != nil {
@@ -53,8 +52,8 @@ func (ac *ApartmentController) GetApartment(res http.ResponseWriter, req *http.R
 }
 
 func (ac *ApartmentController) GetAllApartments(res http.ResponseWriter, req *http.Request) {
-	filter, err := api_scripts.ParseApartmentFilter(req)
 
+	filter, err := api_scripts.ParseApartmentFilter(req)
 	if err != nil {
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
@@ -106,7 +105,6 @@ func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *htt
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
-
 	var allImages [][]*models.ApartmentImage
 	for _, apartment := range apartments {
 		images, err := ac.IH.GetImagesByApartment(apartment)
@@ -135,18 +133,18 @@ func (ac *ApartmentController) CreateApartment(res http.ResponseWriter, req *htt
 		return
 	}
 
-	var requestBody struct {
-		SellerID     int64    `json:"seller_id"`
-		Name         string   `json:"name"`
-		Description  string   `json:"description"`
-		Capacity     int16    `json:"capacity"`
-		PricePerHour int64    `json:"price_per_hour"`
-		IsActive     bool     `json:"is_active"`
-		ImageURL     string   `json:"image_url"`
-		Metro        string   `json:"metro"`
-		Address      string   `json:"address"`
-		Amenities    []string `json:"amenities"`
-	}
+    var requestBody struct {
+        SellerID     int64  `json:"seller_id"`
+        Name         string  `json:"name"`
+        Description  string  `json:"description"`
+        Capacity     int16   `json:"capacity"`
+        PricePerHour int64   `json:"price_per_hour"`
+        IsActive     bool    `json:"is_active"`
+        Address      string  `json:"address"`
+        Metro        string  `json:"metro"`
+        Amenities    []int64 `json:"amenities"`
+    }
+    requestBody.SellerID = userID
 
 	err := json.NewDecoder(req.Body).Decode(&requestBody)
 	if err != nil {
@@ -154,78 +152,56 @@ func (ac *ApartmentController) CreateApartment(res http.ResponseWriter, req *htt
 		return
 	}
 
-	// Валидация
-	if requestBody.Name == "" {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Название обязательно")
-		return
-	}
+    mes := utils.ValidateRequired(requestBody.Name)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+    mes = utils.ValidateRequired(requestBody.Description)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+    mes = utils.ValidateRequired(requestBody.Address)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
+    mes = utils.ValidateRequired(requestBody.Metro)
+    if mes != "" {
+        api_scripts.RespondError(res, http.StatusBadRequest, mes)
+        return
+    }
 
-	if requestBody.PricePerHour <= 0 {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Цена должна быть больше 0")
-		return
-	}
+    apartment := &models.Apartment{
+        SellerID:     userID,
+        Name:         requestBody.Name,
+        Description:  requestBody.Description,
+        Capacity:     requestBody.Capacity,
+        PricePerHour: requestBody.PricePerHour,
+        IsActive:     requestBody.IsActive,
+        Address:      requestBody.Address,
+        Metro:        requestBody.Metro,
+    }
 
-	if requestBody.Capacity <= 0 {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Вместимость должна быть больше 0")
-		return
-	}
+    for _, amenityID := range(requestBody.Amenities) {
+        amenity, err := ac.Rep.GetAmenityByID(amenityID)
+        if(err != nil) {
+            api_scripts.RespondError(res, http.StatusBadRequest, "Не удалось найти удобства: " + err.Error())
+            return
+        }
+        apartment.Amenities = append(apartment.Amenities, amenity)
+    }
 
-	requestBody.SellerID = userID
+    err = ac.Rep.Create(apartment)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, "Не удалось создать объявление: " + err.Error())
+        return
+    }
 
-	apartment := &models.Apartment{
-		SellerID:     requestBody.SellerID,
-		Name:         requestBody.Name,
-		Description:  requestBody.Description,
-		Capacity:     requestBody.Capacity,
-		PricePerHour: requestBody.PricePerHour,
-		IsActive:     requestBody.IsActive,
-		Metro:        &requestBody.Metro,
-		Address:      &requestBody.Address,
-	}
-
-	// Сохраняем помещение в БД
-	err = ac.Rep.Create(apartment)
-	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Не удалось создать объявление: "+err.Error())
-		return
-	}
-
-	// Обработка изображения
-	if requestBody.ImageURL != "" {
-		imageRepo := repository.GetApartmentImageRepository()
-
-		if strings.HasPrefix(requestBody.ImageURL, "data:image") {
-			if len(requestBody.ImageURL) > 7*1024*1024 {
-				api_scripts.RespondError(res, http.StatusBadRequest,
-					"Изображение слишком большое для base64. Используйте /upload-images")
-				return
-			}
-
-			image := &models.ApartmentImage{
-				ApartmentID: apartment.ID,
-				ImageURL:    requestBody.ImageURL,
-				Position:    0,
-			}
-
-			if err := imageRepo.Create(image); err != nil {
-				log.Printf("⚠️ Ошибка сохранения изображения: %v", err)
-			}
-		} else if strings.HasPrefix(requestBody.ImageURL, "/uploads/") {
-			image := &models.ApartmentImage{
-				ApartmentID: apartment.ID,
-				ImageURL:    requestBody.ImageURL,
-				Position:    0,
-			}
-
-			if err := imageRepo.Create(image); err != nil {
-				log.Printf("⚠️ Ошибка сохранения изображения: %v", err)
-			}
-		}
-	}
-
-	api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
-		"id":      apartment.ID,
-		"message": "Объявление успешно создано",
+    api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
+        "id":         apartment.ID,
+        "message":    "Объявление успешно создано",
 	})
 }
 
@@ -236,11 +212,11 @@ func (ac *ApartmentController) UploadApartmentImages(res http.ResponseWriter, re
 		return
 	}
 
-	apartmentID, err := api_scripts.ParseID(req)
-	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-		return
-	}
+    apartmentID, err := api_scripts.ParseID(req)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения: " + err.Error())
+        return
+    }
 
 	apartment, err := ac.Rep.GetByID(apartmentID)
 	if err != nil {
@@ -267,15 +243,12 @@ func (ac *ApartmentController) UploadApartmentImages(res http.ResponseWriter, re
 		return
 	}
 
-	// ✅ УДАЛЯЕМ ВСЕ СТАРЫЕ ИЗОБРАЖЕНИЯ ПЕРЕД ЗАГРУЗКОЙ НОВЫХ
 	log.Printf("🗑️ Удаляем старые изображения для помещения %d", apartmentID)
 	err = ac.IH.DeleteAllImages(apartmentID)
 	if err != nil {
 		log.Printf("⚠️ Ошибка удаления старых изображений: %v", err)
-		// Продолжаем выполнение, даже если не удалось удалить
 	}
 
-	// Загружаем новые изображения
 	imageURLs, _, err := ac.IH.ImageRepoHandleImages(req, apartmentID)
 	if err != nil {
 		api_scripts.RespondError(res, http.StatusBadRequest, "Не удалось сохранить фотографии: "+err.Error())
@@ -446,9 +419,15 @@ func (ac *ApartmentController) DeleteApartment(res http.ResponseWriter, req *htt
 		return
 	}
 
-	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
-		"message": "Объявление успешно удалено",
-	})
+    err = ac.IH.DeleteAllImages(apartmentID)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении изображений: "+err.Error())
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+        "message": "Объявление успешно удалено",
+    })
 }
 
 func (ac *ApartmentController) DeleteAllApartmentImages(res http.ResponseWriter, req *http.Request) {
@@ -489,3 +468,30 @@ func (ac *ApartmentController) DeleteAllApartmentImages(res http.ResponseWriter,
 		"message": "Все изображения успешно удалены",
 	})
 }
+
+func (ac *ApartmentController) GetAllAmenities(res http.ResponseWriter, req *http.Request) {
+    amenities, err := ac.Rep.GetAllAmenities()
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске удобств")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, amenities)
+}
+
+func (ac *ApartmentController) GetAmenity(res http.ResponseWriter, req *http.Request) {
+    id, err := api_scripts.ParseID(req)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+        return
+    }
+
+    amenity, err := ac.Rep.GetAmenityByID(id)
+    if err != nil {
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске удобства")
+        return
+    }
+
+    api_scripts.RespondJSON(res, http.StatusOK, amenity)
+}
+
