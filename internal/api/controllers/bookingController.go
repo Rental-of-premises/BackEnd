@@ -319,6 +319,15 @@ func (bc *BookingController) CancelBooking(res http.ResponseWriter, req *http.Re
 		return
 	}
 
+	oldStatus := booking.Status
+	newStatus := "cancelled"
+	err = bc.Rep.UpdateStatus(bookingID, newStatus)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при отмене бронирования")
+		return
+	}
+	go bc.sendStatusUpdateEmail(booking, oldStatus, newStatus)
+
 	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
 		"message": "Бронирование успешно отменено",
 		"status":  "cancelled",
@@ -374,6 +383,15 @@ func (bc *BookingController) ConfirmBookingBySeller(res http.ResponseWriter, req
 		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при подтверждении бронирования")
 		return
 	}
+
+	oldStatus := booking.Status
+	newStatus := "confirmed"
+	err = bc.Rep.UpdateStatus(bookingID, newStatus)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при подтверждении бронирования")
+		return
+	}
+	go bc.sendStatusUpdateEmail(booking, oldStatus, newStatus)
 
 	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
 		"message": "Бронирование успешно подтверждено",
@@ -431,8 +449,73 @@ func (bc *BookingController) RejectBookingBySeller(res http.ResponseWriter, req 
 		return
 	}
 
+	oldStatus := booking.Status
+	newStatus := "rejected"
+	err = bc.Rep.UpdateStatus(bookingID, newStatus)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при отклонении бронирования")
+		return
+	}
+	go bc.sendStatusUpdateEmail(booking, oldStatus, newStatus)
+
 	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
 		"message": "Бронирование отклонено",
 		"status":  "rejected",
 	})
+}
+
+
+func (bc *BookingController) sendStatusUpdateEmail(booking *models.Booking, oldStatus, newStatus string) {
+    apartment, err := bc.ApartmentRepo.GetByID(booking.ApartmentID)
+    if err != nil {
+        return
+    }
+
+    user, err := bc.Rep.GetUserByID(booking.UserID)
+    if err != nil || user == nil {
+        return
+    }
+
+    statusColors := map[string]string{
+        "waiting":    "#eab308",
+        "confirmed":  "#22c55e", 
+        "completed":  "#94a3b8",
+        "cancelled":  "#ef4444", 
+        "rejected":   "#ef4444", 
+    }
+
+    statusNames := map[string]string{
+        "waiting":    "Ожидание",
+        "confirmed":  "Подтверждено",
+        "completed":  "Завершено",
+        "cancelled":  "Отменено",
+        "rejected":   "Отклонено",
+    }
+
+    data := struct {
+        UserName       string
+        ApartmentName  string
+        TimeFrom       string
+        TimeTo         string
+        OldStatus      string
+        NewStatus      string
+        OldStatusColor string
+        NewStatusColor string
+    }{
+        UserName:       user.Name,
+        ApartmentName:  apartment.Name,
+        TimeFrom:       booking.TimeFrom.Format("02.01.2006 15:04"),
+        TimeTo:         booking.TimeTo.Format("02.01.2006 15:04"),
+        OldStatus:      statusNames[oldStatus],
+        NewStatus:      statusNames[newStatus],
+        OldStatusColor: statusColors[oldStatus],
+        NewStatusColor: statusColors[newStatus],
+    }
+
+    body, err := bc.EmailService.RenderTemplate("booking_status_update.html", data)
+    if err != nil {
+        return
+    }
+
+    bc.EmailService.SendEmail(user.Email, "Статус бронирования изменён", body)
 }
