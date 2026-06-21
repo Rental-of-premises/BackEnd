@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS avatar (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
+    image_data TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_avatar_user ON avatar(user_id);
@@ -48,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_apartments_active ON apartments(is_active);
 CREATE TABLE IF NOT EXISTS apartment_images (
     id BIGSERIAL PRIMARY KEY,
     apartment_id BIGINT NOT NULL REFERENCES apartments(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
+    image_data TEXT NOT NULL,
     position INT DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -100,7 +100,9 @@ CREATE TABLE IF NOT EXISTS reviews (
     CHECK (stars >= 1 AND stars <= 5),
 
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE
+    FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE,
+
+    CONSTRAINT unique_user_apartment_review UNIQUE (user_id, apartment_id)
 );
 CREATE INDEX IF NOT EXISTS idx_reviews_apartment ON reviews(apartment_id);
 

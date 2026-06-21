@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"rent/internal/api/middleware"
 	api_scripts "rent/internal/api/scripts"
@@ -30,16 +31,30 @@ func (uc *UserController) GetUser(res http.ResponseWriter, req *http.Request) {
 
 	user, err := uc.Rep.GetByID(id)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusInternalServerError, "Failed to get user: " + err.Error())
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске пользователя: " + err.Error())
 		return
 	}
 	if user == nil {
-		api_scripts.RespondError(res, http.StatusNotFound, "User not found")
+		api_scripts.RespondError(res, http.StatusNotFound, "Пользователь не найден")
+		return
+	}
+
+	avatar, err := uc.AH.GetAvatarByUser(user)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка получения аватарки: "+err.Error())
 		return
 	}
 
 	user.Password = ""
-	api_scripts.RespondJSON(res, http.StatusOK, user)
+	response := struct {
+		User   *models.User   `json:"user"`
+		Avatar *models.Avatar `json:"avatar"`
+	}{
+		User: user,
+		Avatar: avatar,
+	}
+
+	api_scripts.RespondJSON(res, http.StatusOK, response)
 }
 
 func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
@@ -239,5 +254,56 @@ func (uc *UserController) ConfirmEmail(res http.ResponseWriter, req *http.Reques
 
 	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
 		"message": "Email успешно подтверждён! Теперь вы можете войти.",
+	})
+}
+func (uc *UserController) UploadAvatar(res http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(req)
+	if !ok {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+		return
+	}
+
+	user, err := uc.Rep.GetByID(userID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске пользователя")
+		return
+	}
+	if user == nil {
+		api_scripts.RespondError(res, http.StatusNotFound, "Пользователь не найден")
+		return
+	}
+
+	contentType := req.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "multipart/form-data") {
+		api_scripts.RespondError(res, http.StatusBadRequest, 
+			"Ожидается multipart/form-data, получено: "+contentType)
+		return
+	}
+
+	log.Println("📝 Начинаем парсинг формы...")
+	err = req.ParseMultipartForm(10 << 20)
+	if err != nil {
+		log.Printf("❌ ParseMultipartForm ошибка: %v", err)
+		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка парсинга формы: "+err.Error())
+		return
+	}
+	defer req.MultipartForm.RemoveAll()
+
+	if req.MultipartForm == nil {
+		log.Println("❌ req.MultipartForm is nil после ParseMultipartForm!")
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Форма не распарсена")
+		return
+	}
+	log.Printf("✅ req.MultipartForm распарсен: %+v", req.MultipartForm)
+
+	base64Data, err := uc.AH.ImageRepoHandleImageAvatar(req, userID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Не удалось сохранить аватарку: "+err.Error())
+		return
+	}
+
+	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+		"message": "Аватарка успешно загружена", 
+		"image":   base64Data, 
 	})
 }

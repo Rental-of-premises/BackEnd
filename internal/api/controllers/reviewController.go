@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 
 	"rent/internal/api/middleware"
@@ -92,15 +93,15 @@ func (rc *ReviewController) CreateReview(res http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	valid, err := rc.BookingRepo.CheckReviewValidation(requestBody.UserID, requestBody.ApartmentID)
-	if(err != nil) {
-		api_scripts.RespondError(res, http.StatusUnauthorized, "Ошибка при проверке валидности написания отзыва: " + err.Error())
-		return
-	}
-	if(!valid) {
-		api_scripts.RespondError(res, http.StatusUnauthorized, "Нельзя написать отзыв")
-		return
-	}
+	// valid, err := rc.BookingRepo.CheckReviewValidation(requestBody.UserID, requestBody.ApartmentID)
+	// if(err != nil) {
+	// 	api_scripts.RespondError(res, http.StatusUnauthorized, "Ошибка при проверке валидности написания отзыва: " + err.Error())
+	// 	return
+	// }
+	// if(!valid) {
+	// 	api_scripts.RespondError(res, http.StatusUnauthorized, "Нельзя написать отзыв")
+	// 	return
+	// }
 
 	requestBody.UserID = userID
 	requestBody.ApartmentID = apartmentID
@@ -114,6 +115,11 @@ func (rc *ReviewController) CreateReview(res http.ResponseWriter, req *http.Requ
 
 	err = rc.Rep.Create(review)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") ||
+		strings.Contains(err.Error(), "unique_user_apartment_review") {
+			api_scripts.RespondError(res, http.StatusConflict, "Вы уже оставили отзыв на это объявление")
+	 		return
+        }
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}

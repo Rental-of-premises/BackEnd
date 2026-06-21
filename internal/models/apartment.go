@@ -31,7 +31,7 @@ type ApartmentFilter struct {
 type ApartmentImage struct {
     ID          int64     `json:"id"`
     ApartmentID int64     `json:"apartment_id"`
-    ImageURL    string    `json:"image_url"`
+    ImageData    string    `json:"image_data"`
     Position    int       `json:"position"`
 	CreatedAt    time.Time `json:"created_at"`
 }
