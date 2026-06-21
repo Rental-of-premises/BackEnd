@@ -232,23 +232,24 @@ func (uc *UserController) DeleteAccount(res http.ResponseWriter, req *http.Reque
 }
 
 func (uc *UserController) ConfirmEmail(res http.ResponseWriter, req *http.Request) {
-	token := req.URL.Query().Get("token")
-	if token == "" {
-		http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=error&message=Токен не указан", http.StatusFound)
-		return
-	}
+    token := req.URL.Query().Get("token")
+    if token == "" {
+        http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=error&message=Токен не указан", http.StatusFound)
+        return
+    }
 
-	userID, err := uc.Rep.ActivateUser(token)
-	if err != nil {
-		http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=error&message=Ошибка активации", http.StatusFound)
-		return
-	}
-	if userID == 0 {
-		http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=error&message=Неверный или просроченный токен", http.StatusFound)
-		return
-	}
+    userID, err := uc.Rep.ActivateUser(token)
+    if err != nil {
+        http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=error&message=Ошибка активации", http.StatusFound)
+        return
+    }
+    if userID == 0 {
+        http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=error&message=Неверный или просроченный токен", http.StatusFound)
+        return
+    }
 
-	http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=success", http.StatusFound)
+    // ✅ Передаём токен, чтобы фронтенд сам обработал
+    http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?token="+token, http.StatusFound)
 }
 
 
