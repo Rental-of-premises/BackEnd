@@ -18,7 +18,7 @@ func NewApartmentRepository(db *sql.DB) *ApartmentRepository {
 
 func (r *ApartmentRepository) Create(apartment *models.Apartment) error {
     query := `
-        INSERT INTO apartments (name, seller_id, description, capacity, price_per_hour, is_active, address, metro)
+        INSERT INTO apartment (name, seller_id, description, capacity, price_per_hour, is_active, address, metro)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING id, created_at
     `

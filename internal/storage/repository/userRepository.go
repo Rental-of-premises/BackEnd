@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"rent/internal/models"
 	"log"
+	"strings"
 )
 
 type UserRepository struct {
@@ -106,30 +107,49 @@ func (r *UserRepository) GetAll() ([]*models.User, error) {
 
 	return users, rows.Err()
 }
-
 func (r *UserRepository) Update(user *models.User) error {
-	query := `
-		UPDATE users
-		SET name = $1, password = $2, email = $3
-		WHERE id = $4
-	`
+    query := "UPDATE users SET"
+    args := []interface{}{}
+    argCounter := 1
 
-	result, err := r.Db.Exec(query, user.Name, user.Password, user.Email, user.ID)
-	if err != nil {
-		return err
-	}
+    if user.Name != "" {
+        query += " name = " + fmt.Sprintf("$%d", argCounter) + ","
+        args = append(args, user.Name)
+        argCounter++
+    }
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return fmt.Errorf("user with id %d not found", user.ID)
-	}
+    if user.Password != "" {
+        query += " password = " + fmt.Sprintf("$%d", argCounter) + ","
+        args = append(args, user.Password)
+        argCounter++
+    }
 
-	return nil
+    if user.Email != "" {
+        query += " email = " + fmt.Sprintf("$%d", argCounter) + ","
+        args = append(args, user.Email)
+        argCounter++
+    }
+
+    query = strings.TrimSuffix(query, ",")
+
+    query += " WHERE id = " + fmt.Sprintf("$%d", argCounter)
+    args = append(args, user.ID)
+
+    result, err := r.Db.Exec(query, args...)
+    if err != nil {
+        return err
+    }
+
+    rows, err := result.RowsAffected()
+    if err != nil {
+        return err
+    }
+    if rows == 0 {
+        return fmt.Errorf("user with id %d not found", user.ID)
+    }
+
+    return nil
 }
-
 func (r *UserRepository) Delete(id int64) error {
 	query := `DELETE FROM users WHERE id = $1`
 
