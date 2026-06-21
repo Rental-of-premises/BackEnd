@@ -112,7 +112,6 @@ func (r *ApartmentRepository) GetAll(filter *models.ApartmentFilter) ([]*models.
 	argCounter := 1
 	conditions := []string{}
 
-	// ✅ Фильтр по удобствам (из HEAD)
 	if filter != nil && len(filter.Amenities) > 0 {
 		query += " JOIN apartment_amenities aa ON a.id = aa.apartment_id"
 		placeholders := []string{}
@@ -124,10 +123,8 @@ func (r *ApartmentRepository) GetAll(filter *models.ApartmentFilter) ([]*models.
 		conditions = append(conditions, fmt.Sprintf("aa.amenity_id IN (%s)", strings.Join(placeholders, ", ")))
 	}
 
-	// ✅ WHERE 1=1 (из main)
 	query += " WHERE 1=1"
 
-	// ✅ Фильтры (из main)
 	if filter != nil {
 		if filter.IsActive != nil {
 			conditions = append(conditions, fmt.Sprintf("a.is_active = $%d", argCounter))
@@ -154,12 +151,10 @@ func (r *ApartmentRepository) GetAll(filter *models.ApartmentFilter) ([]*models.
 		}
 	}
 
-	// ✅ Добавляем условия в запрос (из HEAD)
 	for _, cond := range conditions {
 		query += " AND " + cond
 	}
 
-	// ✅ Пагинация
 	limit := 10
 	offset := 0
 	if filter != nil {
@@ -198,6 +193,11 @@ func (r *ApartmentRepository) GetAll(filter *models.ApartmentFilter) ([]*models.
 		if err != nil {
 			return nil, err
 		}
+        amenities, err := r.GetAmenitiesByApartmentID(apartment.ID)
+		if err != nil {
+			return nil, err
+		}
+        apartment.Amenities = amenities
 		apartments = append(apartments, &apartment)
 	}
 
@@ -320,45 +320,6 @@ func (r *ApartmentRepository) Delete(id int64) error {
     return nil
 }
 
-func (r *ApartmentRepository) GetBySeller(sellerID int64) ([]*models.Apartment, error) {
-    query := `
-        SELECT id, seller_id, name, description, capacity, price_per_hour, is_active, address, metro, created_at
-        FROM apartments
-        WHERE seller_id = $1
-        ORDER BY created_at DESC
-    `
-
-    rows, err := r.Db.Query(query, sellerID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var apartments []*models.Apartment
-    for rows.Next() {
-        var apartment models.Apartment
-        err := rows.Scan(
-            &apartment.ID,
-            &apartment.SellerID,
-            &apartment.Name,
-            &apartment.Description,
-            &apartment.Capacity,
-            &apartment.PricePerHour,
-            &apartment.IsActive,
-            &apartment.Address,
-            &apartment.Metro,
-            &apartment.CreatedAt,
-        )
-        if err != nil {
-            return nil, err
-        }
-        apartments = append(apartments, &apartment)
-    }
-
-    return apartments, rows.Err()
-}
-
-
 func (r *ApartmentRepository) GetAmenityByID(id int64) (*models.Amenity, error) {
     query := `
         SELECT id, name, icon
@@ -380,6 +341,32 @@ func (r *ApartmentRepository) GetAmenityByID(id int64) (*models.Amenity, error) 
     return &amenity, nil
 }
 
+func (r *ApartmentRepository) GetAmenitiesByApartmentID(apartmentID int64) ([]*models.Amenity, error) {
+    query := `
+        SELECT a.id, a.name, a.icon
+        FROM amenities a
+        JOIN apartment_amenities aa ON a.id = aa.amenity_id
+        WHERE aa.apartment_id = $1
+        ORDER BY a.name
+    `
+    rows, err := r.Db.Query(query, apartmentID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var amenities []*models.Amenity
+    for rows.Next() {
+        var am models.Amenity
+        err := rows.Scan(&am.ID, &am.Name, &am.Icon)
+        if err != nil {
+            return nil, err
+        }
+        amenities = append(amenities, &am)
+    }
+
+    return amenities, rows.Err()
+}
 
 func (r *ApartmentRepository) GetAllAmenities() ([]*models.Amenity, error) {
     query := `

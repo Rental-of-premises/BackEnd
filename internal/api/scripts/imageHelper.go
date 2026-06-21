@@ -41,8 +41,8 @@ func (h *ImageHelper) ImageRepoHandleImages(req *http.Request, apartmentID int64
 		for _, imageID := range deletedImageIDs {
 			image, err := h.ImageRepo.GetByID(imageID)
 			if err == nil && image.ApartmentID == apartmentID {
-				_ = utils.DeleteFile(image.ImageURL)
 				_ = h.ImageRepo.Delete(imageID)
+				log.Printf("🗑️ Удалено изображение #%d из БД", imageID)
 			}
 		}
 	}
@@ -51,35 +51,31 @@ func (h *ImageHelper) ImageRepoHandleImages(req *http.Request, apartmentID int64
 		return newImages, deletedImageIDs, fmt.Errorf("не инициализирован ImageRepo")
 	}
 
-	if req.MultipartForm == nil {
-		return newImages, deletedImageIDs, nil
-	}
-
 	files := req.MultipartForm.File["images"]
 	if len(files) > 0 {
 		existingImages, _ := h.ImageRepo.GetByApartmentID(apartmentID)
 		nextPosition := len(existingImages)
 
-		prefix := fmt.Sprintf("apartment_%d", apartmentID)
-		uploadedImages, err := utils.SaveUploadedFiles(files, prefix)
+		base64Images, err := utils.SaveUploadedFiles(files, fmt.Sprintf("apartment_%d", apartmentID))
 		if err != nil {
 			return newImages, deletedImageIDs, err
 		}
 
-		for _, img := range uploadedImages {
+		for _, base64Data := range base64Images {
 			image := &models.ApartmentImage{
 				ApartmentID: apartmentID,
-				ImageURL:    img.ImageURL,
+				ImageData:   base64Data, 
 				Position:    nextPosition,
 			}
 			if err := h.ImageRepo.Create(image); err != nil {
-				log.Printf("Ошибка сохранения изображения в БД: %v", err)
-				_ = utils.DeleteFile(img.ImageURL)
+				log.Printf("❌ Ошибка сохранения изображения в БД: %v", err)
 				continue
 			}
 			nextPosition++
-			newImages = append(newImages, img.ImageURL)
+			newImages = append(newImages, base64Data) // 
 		}
+		
+		log.Printf("📸 Загружено %d новых изображений", len(newImages))
 	}
 
 	return newImages, deletedImageIDs, nil
@@ -98,10 +94,10 @@ func (h *ImageHelper) GetImagesByApartment(apartment *models.Apartment) ([]*mode
 	return images, nil
 }
 
-
 func (h *ImageHelper) DeleteAllImages(apartmentID int64) error {
 	log.Printf("🗑️ DeleteAllImages: удаление всех изображений для помещения %d", apartmentID)
 
+	// Получаем изображения
 	images, err := h.ImageRepo.GetByApartmentID(apartmentID)
 	if err != nil {
 		log.Printf("⚠️ Ошибка получения изображений: %v", err)
@@ -110,17 +106,31 @@ func (h *ImageHelper) DeleteAllImages(apartmentID int64) error {
 
 	log.Printf("📸 Найдено %d изображений для удаления", len(images))
 
-	for _, img := range images {
-		if err := utils.DeleteFile(img.ImageURL); err != nil {
-			log.Printf("⚠️ Ошибка удаления файла %s: %v", img.ImageURL, err)
-		}
-	}
-
 	if err := h.ImageRepo.DeleteByApartmentID(apartmentID); err != nil {
 		log.Printf("⚠️ Ошибка удаления записей из БД: %v", err)
 		return err
 	}
 
-	log.Printf("✅ Все изображения для помещения %d удалены", apartmentID)
+	log.Printf("✅ Все изображения для помещения %d удалены из БД", apartmentID)
+	return nil
+}
+
+func (h *ImageHelper) DeleteImage(imageID int64) error {
+	log.Printf("🗑️ DeleteImage: удаление изображения #%d", imageID)
+
+	image, err := h.ImageRepo.GetByID(imageID)
+	if err != nil {
+		return fmt.Errorf("ошибка получения изображения: %w", err)
+	}
+
+	if image == nil {
+		return fmt.Errorf("изображение не найдено")
+	}
+
+	if err := h.ImageRepo.Delete(imageID); err != nil {
+		return fmt.Errorf("ошибка удаления из БД: %w", err)
+	}
+
+	log.Printf("✅ Изображение #%d удалено из БД", imageID)
 	return nil
 }

@@ -222,7 +222,7 @@ func (bc *BookingController) CreateBooking(res http.ResponseWriter, req *http.Re
 	requestBody.Status = "waiting"
 	check, err := bc.Rep.CheckAvailability(requestBody.ApartmentID, requestBody.TimeFrom, requestBody.TimeTo, userID)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка при проверке возможности брони: " + err.Error())
+		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка при проверке возможности брони: ")
 		return
 	}
 	if !check {

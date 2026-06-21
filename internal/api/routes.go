@@ -62,10 +62,12 @@ func CreateAndRunRoutes() {
 
 	emailService := email.NewEmailService(cfg)
 	iRepo := repository.GetApartmentImageRepository()
+	aRepo := repository.GetAvatarRepository()
 
 	userController := &api_controllers.UserController{
 		Rep:          repository.GetUserRepository(),
 		EmailService: emailService,
+		AH:  api_scripts.NewAvatarHelper(aRepo),
 	}
 
 	apartmentController := &api_controllers.ApartmentController{
@@ -107,6 +109,10 @@ func CreateAndRunRoutes() {
 
 	protectedRouter.HandleFunc("/auth/logout", userController.LogOut).Methods("POST", "OPTIONS")
 	protectedRouter.HandleFunc("/auth/delete", userController.DeleteAccount).Methods("DELETE", "OPTIONS")
+	protectedRouter.HandleFunc("/account/settings/profile/change-avatar", userController.UploadAvatar).Methods("POST", "OPTIONS")
+	//protectedRouter.HandleFunc("/account/settings/profile/change-name", userController.UploadAvatar).Methods("PATCH", "OPTIONS")
+	//protectedRouter.HandleFunc("/account/settings/security/change-password", userController.UploadAvatar).Methods("PATCH", "OPTIONS")
+	//protectedRouter.HandleFunc("/account/settings/security/change-email", userController.UploadAvatar).Methods("PATCH", "OPTIONS")
 
 	protectedRouter.HandleFunc("/account/my-apartments", apartmentController.GetMyApartments).Methods("GET", "OPTIONS")
 	protectedRouter.HandleFunc("/account/new-apartment", apartmentController.CreateApartment).Methods("POST", "OPTIONS")
