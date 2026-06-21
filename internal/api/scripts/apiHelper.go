@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	api_models "rent/internal/api/models"
-	"strconv"
 	models "rent/internal/models"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -32,7 +32,7 @@ func ParseID(r *http.Request) (int64, error) {
 
 func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 	filter := &models.ApartmentFilter{}
-	
+
 	if isActiveStr := r.URL.Query().Get("is_active"); isActiveStr != "" {
 		isActive, err := strconv.ParseBool(isActiveStr)
 		if err != nil {
@@ -40,7 +40,7 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 		}
 		filter.IsActive = &isActive
 	}
-	
+
 	if sellerIDStr := r.URL.Query().Get("seller_id"); sellerIDStr != "" {
 		sellerID, err := strconv.ParseInt(sellerIDStr, 10, 64)
 		if err != nil {
@@ -48,7 +48,7 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 		}
 		filter.SellerID = &sellerID
 	}
-	
+
 	if minPriceStr := r.URL.Query().Get("min_price"); minPriceStr != "" {
 		minPrice, err := strconv.ParseInt(minPriceStr, 10, 64)
 		if err != nil {
@@ -56,7 +56,7 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 		}
 		filter.MinPrice = &minPrice
 	}
-	
+
 	if maxPriceStr := r.URL.Query().Get("max_price"); maxPriceStr != "" {
 		maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64)
 		if err != nil {
@@ -64,8 +64,10 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 		}
 		filter.MaxPrice = &maxPrice
 	}
-	
-	limit := 10
+
+	// ========== ЛИМИТ ==========
+	// ✅ Увеличиваем лимит до 1000
+	limit := 1000
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		parsed, err := strconv.Atoi(limitStr)
 		if err != nil {
@@ -76,7 +78,7 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 		}
 	}
 	filter.Limit = &limit
-	
+
 	offset := 0
 	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
 		parsed, err := strconv.Atoi(offsetStr)
@@ -89,6 +91,7 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 	}
 	filter.Offset = &offset
 
+<<<<<<< HEAD
 	amenityIDs := r.URL.Query()["amenities"]
 	if len(amenityIDs) > 0 {
 		for _, idStr := range amenityIDs {
@@ -99,16 +102,18 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 		}
 	}
 	
+=======
+>>>>>>> main
 	return filter, nil
 }
 
 func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
 	filter := &models.BookingFilter{}
-	
+
 	if statusStr := r.URL.Query().Get("status"); statusStr != "" {
 		filter.Status = &statusStr
 	}
-	
+
 	if sellerIDStr := r.URL.Query().Get("seller_id"); sellerIDStr != "" {
 		sellerID, err := strconv.ParseInt(sellerIDStr, 10, 64)
 		if err != nil {
@@ -116,7 +121,7 @@ func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
 		}
 		filter.SellerID = &sellerID
 	}
-	
+
 	if apartmentIDStr := r.URL.Query().Get("apartment_id"); apartmentIDStr != "" {
 		apartmentID, err := strconv.ParseInt(apartmentIDStr, 10, 64)
 		if err != nil {
@@ -124,7 +129,7 @@ func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
 		}
 		filter.ApartmentID = &apartmentID
 	}
-	
+
 	if userIDStr := r.URL.Query().Get("user_id"); userIDStr != "" {
 		userID, err := strconv.ParseInt(userIDStr, 10, 64)
 		if err != nil {
@@ -132,7 +137,7 @@ func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
 		}
 		filter.UserID = &userID
 	}
-	
+
 	if minPriceStr := r.URL.Query().Get("min_price"); minPriceStr != "" {
 		minPrice, err := strconv.ParseInt(minPriceStr, 10, 64)
 		if err != nil {
@@ -140,7 +145,7 @@ func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
 		}
 		filter.MinPrice = &minPrice
 	}
-	
+
 	if maxPriceStr := r.URL.Query().Get("max_price"); maxPriceStr != "" {
 		maxPrice, err := strconv.ParseInt(maxPriceStr, 10, 64)
 		if err != nil {
@@ -148,8 +153,10 @@ func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
 		}
 		filter.MaxPrice = &maxPrice
 	}
-	
-	limit := 10
+
+	// ========== ЛИМИТ ==========
+	// ✅ Увеличиваем лимит до 1000
+	limit := 1000
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		parsed, err := strconv.Atoi(limitStr)
 		if err != nil {
@@ -160,7 +167,7 @@ func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
 		}
 	}
 	filter.Limit = &limit
-	
+
 	offset := 0
 	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
 		parsed, err := strconv.Atoi(offsetStr)
@@ -172,6 +179,6 @@ func ParseBookingFilter(r *http.Request) (*models.BookingFilter, error) {
 		}
 	}
 	filter.Offset = &offset
-	
+
 	return filter, nil
 }

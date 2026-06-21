@@ -1,10 +1,12 @@
 package repository
 
 import (
-    "database/sql"
-    "fmt"
-    "rent/internal/models"
-    "strings"
+
+	"database/sql"
+	"fmt"
+	"log"
+	"rent/internal/models"
+	"strings"
 )
 
 type ApartmentRepository struct {
@@ -69,6 +71,7 @@ func (r *ApartmentRepository) GetByID(id int64) (*models.Apartment, error) {
         &apartment.CreatedAt,
     )
 
+
     if err != nil {
         return nil, err
     }
@@ -100,97 +103,106 @@ func (r *ApartmentRepository) GetByID(id int64) (*models.Apartment, error) {
 }
 
 func (r *ApartmentRepository) GetAll(filter *models.ApartmentFilter) ([]*models.Apartment, error) {
-    query := `
-        SELECT a.id
-        FROM apartments a
-    `
+	query := `
+		SELECT a.id, a.seller_id, a.name, a.description, a.capacity, 
+			   a.price_per_hour, a.is_active, a.created_at, a.metro, a.address
+		FROM apartments a
+	`
 
-    var args []interface{}
-    argCounter := 1
-    conditions := []string{}
+	var args []interface{}
+	argCounter := 1
+	conditions := []string{}
 
-    if filter != nil && len(filter.Amenities) > 0 {
-        query += " JOIN apartment_amenities aa ON a.id = aa.apartment_id"
-        placeholders := []string{}
-        for _, amenityID := range filter.Amenities {
-            placeholders = append(placeholders, fmt.Sprintf("$%d", argCounter))
-            args = append(args, amenityID)
-            argCounter++
-        }
-        conditions = append(conditions, fmt.Sprintf("aa.amenity_id IN (%s)", strings.Join(placeholders, ", ")))
-    }
+	// ✅ Фильтр по удобствам (из HEAD)
+	if filter != nil && len(filter.Amenities) > 0 {
+		query += " JOIN apartment_amenities aa ON a.id = aa.apartment_id"
+		placeholders := []string{}
+		for _, amenityID := range filter.Amenities {
+			placeholders = append(placeholders, fmt.Sprintf("$%d", argCounter))
+			args = append(args, amenityID)
+			argCounter++
+		}
+		conditions = append(conditions, fmt.Sprintf("aa.amenity_id IN (%s)", strings.Join(placeholders, ", ")))
+	}
 
-    query += " WHERE 1=1"
+	// ✅ WHERE 1=1 (из main)
+	query += " WHERE 1=1"
 
-    if filter != nil {
-        if filter.IsActive != nil {
-            conditions = append(conditions, fmt.Sprintf("a.is_active = $%d", argCounter))
-            args = append(args, *filter.IsActive)
-            argCounter++
-        }
+	// ✅ Фильтры (из main)
+	if filter != nil {
+		if filter.IsActive != nil {
+			conditions = append(conditions, fmt.Sprintf("a.is_active = $%d", argCounter))
+			args = append(args, *filter.IsActive)
+			argCounter++
+		}
 
-        if filter.SellerID != nil {
-            conditions = append(conditions, fmt.Sprintf("a.seller_id = $%d", argCounter))
-            args = append(args, *filter.SellerID)
-            argCounter++
-        }
+		if filter.SellerID != nil {
+			conditions = append(conditions, fmt.Sprintf("a.seller_id = $%d", argCounter))
+			args = append(args, *filter.SellerID)
+			argCounter++
+		}
 
-        if filter.MinPrice != nil {
-            conditions = append(conditions, fmt.Sprintf("a.price_per_hour >= $%d", argCounter))
-            args = append(args, *filter.MinPrice)
-            argCounter++
-        }
+		if filter.MinPrice != nil {
+			conditions = append(conditions, fmt.Sprintf("a.price_per_hour >= $%d", argCounter))
+			args = append(args, *filter.MinPrice)
+			argCounter++
+		}
 
-        if filter.MaxPrice != nil {
-            conditions = append(conditions, fmt.Sprintf("a.price_per_hour <= $%d", argCounter))
-            args = append(args, *filter.MaxPrice)
-            argCounter++
-        }
-    }
+		if filter.MaxPrice != nil {
+			conditions = append(conditions, fmt.Sprintf("a.price_per_hour <= $%d", argCounter))
+			args = append(args, *filter.MaxPrice)
+			argCounter++
+		}
+	}
 
-    for _, cond := range conditions {
-        query += " AND " + cond
-    }
+	// ✅ Добавляем условия в запрос (из HEAD)
+	for _, cond := range conditions {
+		query += " AND " + cond
+	}
 
-    limit := 10
-    offset := 0
-    if filter != nil {
-        if filter.Limit != nil {
-            limit = *filter.Limit
-        }
-        if filter.Offset != nil {
-            offset = *filter.Offset
-        }
-    }
+	// ✅ Пагинация
+	limit := 10
+	offset := 0
+	if filter != nil {
+		if filter.Limit != nil {
+			limit = *filter.Limit
+		}
+		if filter.Offset != nil {
+			offset = *filter.Offset
+		}
+	}
 
-    query += " ORDER BY a.id LIMIT $" + fmt.Sprintf("%d", argCounter) + " OFFSET $" + fmt.Sprintf("%d", argCounter+1)
-    args = append(args, limit, offset)
+	query += " ORDER BY a.id LIMIT $" + fmt.Sprintf("%d", argCounter) + " OFFSET $" + fmt.Sprintf("%d", argCounter+1)
+	args = append(args, limit, offset)
 
-    rows, err := r.Db.Query(query, args...)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := r.Db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var apartments []*models.Apartment
-    for rows.Next() {
-        var apartmentID int64
-        err := rows.Scan(
-            &apartmentID,
-        )
-        if err != nil {
-            return nil, err
-        }
+	var apartments []*models.Apartment
+	for rows.Next() {
+		var apartment models.Apartment
+		err := rows.Scan(
+			&apartment.ID,
+			&apartment.SellerID,
+			&apartment.Name,
+			&apartment.Description,
+			&apartment.Capacity,
+			&apartment.PricePerHour,
+			&apartment.IsActive,
+			&apartment.CreatedAt,
+			&apartment.Metro,
+			&apartment.Address,
+		)
+		if err != nil {
+			return nil, err
+		}
+		apartments = append(apartments, &apartment)
+	}
 
-        apartment, err := r.GetByID(apartmentID)
-        if err != nil {
-            return nil, err
-        }
-
-        apartments = append(apartments, apartment)
-    }
-
-    return apartments, rows.Err()
+	return apartments, rows.Err()
 }
 
 func (r *ApartmentRepository) UpdatePartial(id int64, updates map[string]interface{}) error {
@@ -287,6 +299,7 @@ func (r *ApartmentRepository) UpdatePartial(id int64, updates map[string]interfa
     }
 
     return nil
+
 }
 
 func (r *ApartmentRepository) Delete(id int64) error {

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+
 	"rent/internal/api/middleware"
 	api_scripts "rent/internal/api/scripts"
 	"rent/internal/models"
@@ -38,6 +39,7 @@ func (bc *BookingController) GetBooking(res http.ResponseWriter, req *http.Reque
 	api_scripts.RespondJSON(res, http.StatusOK, booking)
 }
 
+
 func (bc *BookingController) GetBookingsByApartment(res http.ResponseWriter, req *http.Request) {
 	apartmentID, err := api_scripts.ParseID(req)
 
@@ -63,6 +65,7 @@ func (bc *BookingController) GetBookingsByApartment(res http.ResponseWriter, req
 		api_scripts.RespondError(res, http.StatusInternalServerError, err.Error())
 		return
 	}
+
 
 	var activeBookings []*models.Booking
 	for _, b := range allBookings {
@@ -101,6 +104,7 @@ func (bc *BookingController) GetMyBookings(res http.ResponseWriter, req *http.Re
 	if err != nil {
 		offset = 0
 	}
+
 
 	filter := &models.BookingFilter{
 		UserID: &userID,
@@ -300,6 +304,7 @@ func (bc *BookingController) ConfirmBookingBySeller(res http.ResponseWriter, req
 	bookingID, err := api_scripts.ParseID(req)
 	if err != nil {
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+
 		return
 	}
 
@@ -355,6 +360,7 @@ func (bc *BookingController) RejectBookingBySeller(res http.ResponseWriter, req 
 	bookingID, err := api_scripts.ParseID(req)
 	if err != nil {
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+
 		return
 	}
 

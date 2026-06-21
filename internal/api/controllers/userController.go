@@ -101,7 +101,11 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
+<<<<<<< HEAD
 		confirmURL := fmt.Sprintf("http://localhost:8080/api/auth/confirm-email?token=%s", token)
+=======
+		confirmURL := fmt.Sprintf("https://team3.verstack.ru/auth/confirm-email?token=%s", token)
+>>>>>>> main
 
 		data := struct {
 			Name       string
@@ -115,7 +119,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			return
 		}
-
+		log.Printf("📧 Отправка письма на %s", user.Email)
 		uc.EmailService.SendEmail(user.Email, "Подтверждение регистрации", body)
 	}()
 
@@ -146,7 +150,6 @@ func (uc *UserController) SignIn(res http.ResponseWriter, req *http.Request) {
 		api_scripts.RespondError(res, http.StatusUnauthorized, "Подтвердите email перед входом. Проверьте почту.")
 		return
 	}
-
 	if user.Password != requestBody.Password {
 		api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный пароль")
 		return

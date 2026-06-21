@@ -1,0 +1,43 @@
+name: Build and Push Backend Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.go
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/team3-backend:latest
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/team3-backend:latest
+            docker rm -f team3-backend
+            docker run -d --name team3-backend --network backend_postgres_network -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/team3-backend:latest
+            docker cp /root/backend/.env team3-backend:/app/.env && docker restart team3-backend

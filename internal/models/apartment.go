@@ -6,11 +6,11 @@ import (
 
 type Apartment struct {
 	ID           int64     `json:"id"`
-	SellerID     int64    `json:"seller_id"`
+	SellerID     int64     `json:"seller_id"`
 	Name         string    `json:"name"`
-	Description  string   `json:"description"`
-	Capacity     int16    `json:"capacity"`
-	PricePerHour int64    `json:"price_per_hour"`
+	Description  string    `json:"description"`
+	Capacity     int16     `json:"capacity"`
+	PricePerHour int64     `json:"price_per_hour"`
 	IsActive     bool      `json:"is_active"`
 	CreatedAt    time.Time `json:"created_at"`
 	Metro        string    `json:"metro"`

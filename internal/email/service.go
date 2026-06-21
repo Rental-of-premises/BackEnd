@@ -3,8 +3,10 @@ package email
 import (
 	"bytes"
     "fmt"
+    "log"
     "html/template"
     "path/filepath"
+    "crypto/tls"
 
     "rent/internal/config"
 
@@ -20,6 +22,7 @@ type EmailService struct {
 
 func NewEmailService(cfg *config.Config) *EmailService {
 	dialer := gomail.NewDialer(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPassword)
+    dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	return &EmailService{
 		dialer:   dialer,
@@ -65,6 +68,7 @@ func (s *EmailService) SendWelcomeEmail(to, name string) error {
 }
 
 func (s *EmailService) SendEmail(to, subject, body string) error {
+    log.Printf("📤 Отправка письма через SMTP на %s", to)
 	m := gomail.NewMessage()
 	m.SetHeader("From", fmt.Sprintf("%s <%s>", s.fromName, s.from))
 	m.SetHeader("To", to)

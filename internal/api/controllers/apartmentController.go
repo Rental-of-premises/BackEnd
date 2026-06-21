@@ -1,27 +1,24 @@
 package api_controllers
 
 import (
-    "encoding/json"
-    "net/http"
-    
-    "rent/internal/api/middleware"
-    api_scripts "rent/internal/api/scripts"
-    "rent/internal/api/utils"
-    "rent/internal/models"
-    "rent/internal/storage/repository"
+	"encoding/json"
+	"log"
+	"net/http"
+	"strings"
+
+	"rent/internal/api/middleware"
+	api_scripts "rent/internal/api/scripts"
+	"rent/internal/models"
+	"rent/internal/storage/repository"
 )
 
 type ApartmentController struct {
-    Rep *repository.ApartmentRepository
-    IH *api_scripts.ImageHelper
+	Rep *repository.ApartmentRepository
+	IH  *api_scripts.ImageHelper
 }
 
-const (
-    inf = 9999999
-)
-
 func (ac *ApartmentController) GetApartment(res http.ResponseWriter, req *http.Request) {
-    id, err := api_scripts.ParseID(req)
+	id, err := api_scripts.ParseID(req)
 
     if err != nil {
         api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
@@ -32,30 +29,26 @@ func (ac *ApartmentController) GetApartment(res http.ResponseWriter, req *http.R
         api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка получения объявления: "+err.Error())
         return
     }
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Failed to get apartment")
-        return
-    }
     if apartment == nil {
         api_scripts.RespondError(res, http.StatusNotFound, "Apartment not found")
         return
     }
 
-    images, err := ac.IH.GetImagesByApartment(apartment)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка получения изображений: " + err.Error())
-        return
-    }
+	images, err := ac.IH.GetImagesByApartment(apartment)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка получения изображений: "+err.Error())
+		return
+	}
 
-    response := struct {
-        Apartment *models.Apartment            `json:"apartment"`
-        Images    []*models.ApartmentImage     `json:"images"`
-    }{
-        Apartment: apartment,
-        Images:    images,
-    }
+	response := struct {
+		Apartment *models.Apartment        `json:"apartment"`
+		Images    []*models.ApartmentImage `json:"images"`
+	}{
+		Apartment: apartment,
+		Images:    images,
+	}
 
-    api_scripts.RespondJSON(res, http.StatusOK, response)
+	api_scripts.RespondJSON(res, http.StatusOK, response)
 }
 
 func (ac *ApartmentController) GetAllApartments(res http.ResponseWriter, req *http.Request) {
@@ -99,13 +92,13 @@ func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *htt
 		api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
 		return
 	}
-	
+
 	filter, err := api_scripts.ParseApartmentFilter(req)
 	if err != nil {
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
-    filter.SellerID = &userID
+	filter.SellerID = &userID
 
 	apartments, err := ac.Rep.GetAll(filter)
 	if err != nil {
@@ -134,11 +127,11 @@ func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *htt
 }
 
 func (ac *ApartmentController) CreateApartment(res http.ResponseWriter, req *http.Request) {
-    userID, ok := middleware.GetUserIDFromContext(req)
-    if !ok {
-        api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
-        return
-    }
+	userID, ok := middleware.GetUserIDFromContext(req)
+	if !ok {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Неверный тип id в контексте")
+		return
+	}
 
     var requestBody struct {
         SellerID     int64  `json:"seller_id"`
@@ -153,11 +146,11 @@ func (ac *ApartmentController) CreateApartment(res http.ResponseWriter, req *htt
     }
     requestBody.SellerID = userID
 
-    err := json.NewDecoder(req.Body).Decode(&requestBody)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
-        return
-    }
+	err := json.NewDecoder(req.Body).Decode(&requestBody)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
+		return
+	}
 
     mes := utils.ValidateRequired(requestBody.Name)
     if mes != "" {
@@ -209,208 +202,222 @@ func (ac *ApartmentController) CreateApartment(res http.ResponseWriter, req *htt
     api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
         "id":         apartment.ID,
         "message":    "Объявление успешно создано",
-    })
+	})
 }
 
 func (ac *ApartmentController) UploadApartmentImages(res http.ResponseWriter, req *http.Request) {
-    userID, ok := middleware.GetUserIDFromContext(req)
-    if !ok {
-        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
-        return
-    }
+	userID, ok := middleware.GetUserIDFromContext(req)
+	if !ok {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+		return
+	}
 
     apartmentID, err := api_scripts.ParseID(req)
     if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
+        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения: " + err.Error())
         return
     }
 
-    apartment, err := ac.Rep.GetByID(apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
-        return
-    }
-    if apartment == nil {
-        api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
-        return
-    }
-    if apartment.SellerID != userID {
-        api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на изменение этого помещения")
-        return
-    }
+	apartment, err := ac.Rep.GetByID(apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
+		return
+	}
+	if apartment == nil {
+		api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
+		return
+	}
+	if apartment.SellerID != userID {
+		api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на изменение этого помещения")
+		return
+	}
 
-    err = req.ParseMultipartForm(32 << 20)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка парсинга формы: "+err.Error())
-        return
-    }
+	err = req.ParseMultipartForm(32 << 20)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка парсинга формы: "+err.Error())
+		return
+	}
 
-    if req.MultipartForm == nil || len(req.MultipartForm.File["images"]) == 0 {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Файлы не найдены")
-        return
-    }
+	if req.MultipartForm == nil || len(req.MultipartForm.File["images"]) == 0 {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Файлы не найдены")
+		return
+	}
 
-    imageURLs, _, err := ac.IH.ImageRepoHandleImages(req, apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Не удалось сохранить фотографии: "+err.Error())
-        return
-    }
+	log.Printf("🗑️ Удаляем старые изображения для помещения %d", apartmentID)
+	err = ac.IH.DeleteAllImages(apartmentID)
+	if err != nil {
+		log.Printf("⚠️ Ошибка удаления старых изображений: %v", err)
+	}
 
-    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
-        "message":      "Изображения успешно загружены",
-        "images":       imageURLs,
-        "images_count": len(imageURLs),
-    })
+	imageURLs, _, err := ac.IH.ImageRepoHandleImages(req, apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Не удалось сохранить фотографии: "+err.Error())
+		return
+	}
+
+	log.Printf("✅ Загружено %d новых изображений для помещения %d", len(imageURLs), apartmentID)
+
+	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+		"message":      "Изображения успешно загружены",
+		"images":       imageURLs,
+		"images_count": len(imageURLs),
+	})
 }
 
 func (ac *ApartmentController) UpdateApartment(res http.ResponseWriter, req *http.Request) {
-    userID, ok := middleware.GetUserIDFromContext(req)
-    if !ok {
-        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
-        return
-    }
+	userID, ok := middleware.GetUserIDFromContext(req)
+	if !ok {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+		return
+	}
 
-    apartmentID, err := api_scripts.ParseID(req)
+	apartmentID, err := api_scripts.ParseID(req)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		return
+	}
 
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-        return
-    }
+	apartment, err := ac.Rep.GetByID(apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
+		return
+	}
+	if apartment == nil {
+		api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
+		return
+	}
 
-    apartment, err := ac.Rep.GetByID(apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
-        return
-    }
-    if apartment == nil {
-        api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
-        return
-    }
+	if apartment.SellerID != userID {
+		api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на редактирование этого помещения")
+		return
+	}
 
-    if apartment.SellerID != userID {
-        api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на редактирование этого помещения")
-        return
-    }
+	var updates map[string]interface{}
+	err = json.NewDecoder(req.Body).Decode(&updates)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON: "+err.Error())
+		return
+	}
 
-    var updates map[string]interface{}
-    err = json.NewDecoder(req.Body).Decode(&updates)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
-        return
-    }
+	log.Printf("📝 Обновление помещения %d: %+v", apartmentID, updates)
 
-    err = ac.Rep.UpdatePartial(apartmentID, updates)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при обновлении помещения")
-        return
-    }
+	if len(updates) == 0 {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Нет данных для обновления")
+		return
+	}
 
-    updatedApartment, err := ac.Rep.GetByID(apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при получении обновленного помещения")
-        return
-    }
+	err = ac.Rep.UpdatePartial(apartmentID, updates)
+	if err != nil {
+		log.Printf("❌ Ошибка обновления: %v", err)
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при обновлении помещения: "+err.Error())
+		return
+	}
 
-    images, err := ac.IH.GetImagesByApartment(updatedApartment)
-    if err != nil {
-        images = []*models.ApartmentImage{}
-    }
+	updatedApartment, err := ac.Rep.GetByID(apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при получении обновленного помещения")
+		return
+	}
 
-    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
-        "apartment": updatedApartment,
-        "images":    images,
-        "message":   "Объявление успешно обновлено",
-    })
+	images, err := ac.IH.GetImagesByApartment(updatedApartment)
+	if err != nil {
+		images = []*models.ApartmentImage{}
+	}
+
+	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+		"apartment": updatedApartment,
+		"images":    images,
+		"message":   "Объявление успешно обновлено",
+	})
 }
 
 func (ac *ApartmentController) UpdateApartmentImages(res http.ResponseWriter, req *http.Request) {
-    userID, ok := middleware.GetUserIDFromContext(req)
-    if !ok {
-        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
-        return
-    }
+	userID, ok := middleware.GetUserIDFromContext(req)
+	if !ok {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+		return
+	}
 
-    apartmentID, err := api_scripts.ParseID(req)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-        return
-    }
+	apartmentID, err := api_scripts.ParseID(req)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		return
+	}
 
-    apartment, err := ac.Rep.GetByID(apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
-        return
-    }
-    if apartment == nil {
-        api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
-        return
-    }
+	apartment, err := ac.Rep.GetByID(apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
+		return
+	}
+	if apartment == nil {
+		api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
+		return
+	}
 
-    if apartment.SellerID != userID {
-        api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на редактирование этого помещения")
-        return
-    }
+	if apartment.SellerID != userID {
+		api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на редактирование этого помещения")
+		return
+	}
 
-    err = req.ParseMultipartForm(32 << 20)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка парсинга формы: "+err.Error())
-        return
-    }
+	err = req.ParseMultipartForm(32 << 20)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка парсинга формы: "+err.Error())
+		return
+	}
 
-    imageURLs, deletedIDs, err := ac.IH.ImageRepoHandleImages(req, apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, "Не удалось изменить фотографии: "+err.Error())
-        return
-    }
+	imageURLs, deletedIDs, err := ac.IH.ImageRepoHandleImages(req, apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Не удалось изменить фотографии: "+err.Error())
+		return
+	}
 
-    updatedImages, err := ac.IH.GetImagesByApartment(apartment)
-    if err != nil {
-        updatedImages = []*models.ApartmentImage{}
-    }
+	updatedImages, err := ac.IH.GetImagesByApartment(apartment)
+	if err != nil {
+		updatedImages = []*models.ApartmentImage{}
+	}
 
-    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
-        "message":         "Изображения успешно обновлены",
-        "images":          updatedImages,
-        "new_images":      imageURLs,
-        "deleted_images":  deletedIDs,
-        "images_count":    len(updatedImages),
-    })
+	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+		"message":        "Изображения успешно обновлены",
+		"images":         updatedImages,
+		"new_images":     imageURLs,
+		"deleted_images": deletedIDs,
+		"images_count":   len(updatedImages),
+	})
 }
 
 func (ac *ApartmentController) DeleteApartment(res http.ResponseWriter, req *http.Request) {
-    userID, ok := middleware.GetUserIDFromContext(req)
-    if !ok {
-        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
-        return
-    }
+	userID, ok := middleware.GetUserIDFromContext(req)
+	if !ok {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+		return
+	}
 
-    apartmentID, err := api_scripts.ParseID(req)
+	apartmentID, err := api_scripts.ParseID(req)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		return
+	}
 
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-        return
-    }
+	apartment, err := ac.Rep.GetByID(apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
+		return
+	}
+	if apartment == nil {
+		api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
+		return
+	}
 
-    apartment, err := ac.Rep.GetByID(apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
-        return
-    }
-    if apartment == nil {
-        api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
-        return
-    }
+	if apartment.SellerID != userID {
+		api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на удаление этого помещения")
+		return
+	}
 
-    if apartment.SellerID != userID {
-        api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на удаление этого помещения")
-        return
-    }
-
-    err = ac.Rep.Delete(apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении помещения")
-        return
-    }
+	err = ac.Rep.Delete(apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении помещения")
+		return
+	}
 
     err = ac.IH.DeleteAllImages(apartmentID)
     if err != nil {
@@ -424,42 +431,42 @@ func (ac *ApartmentController) DeleteApartment(res http.ResponseWriter, req *htt
 }
 
 func (ac *ApartmentController) DeleteAllApartmentImages(res http.ResponseWriter, req *http.Request) {
-    userID, ok := middleware.GetUserIDFromContext(req)
-    if !ok {
-        api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
-        return
-    }
+	userID, ok := middleware.GetUserIDFromContext(req)
+	if !ok {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+		return
+	}
 
-    apartmentID, err := api_scripts.ParseID(req)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
-        return
-    }
+	apartmentID, err := api_scripts.ParseID(req)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
+		return
+	}
 
-    apartment, err := ac.Rep.GetByID(apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
-        return
-    }
-    if apartment == nil {
-        api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
-        return
-    }
+	apartment, err := ac.Rep.GetByID(apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при поиске помещения")
+		return
+	}
+	if apartment == nil {
+		api_scripts.RespondError(res, http.StatusNotFound, "Помещение не найдено")
+		return
+	}
 
-    if apartment.SellerID != userID {
-        api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на редактирование этого помещения")
-        return
-    }
+	if apartment.SellerID != userID {
+		api_scripts.RespondError(res, http.StatusForbidden, "У вас нет прав на редактирование этого помещения")
+		return
+	}
 
-    err = ac.IH.DeleteAllImages(apartmentID)
-    if err != nil {
-        api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении изображений: "+err.Error())
-        return
-    }
+	err = ac.IH.DeleteAllImages(apartmentID)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка при удалении изображений: "+err.Error())
+		return
+	}
 
-    api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
-        "message": "Все изображения успешно удалены",
-    })
+	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
+		"message": "Все изображения успешно удалены",
+	})
 }
 
 func (ac *ApartmentController) GetAllAmenities(res http.ResponseWriter, req *http.Request) {
