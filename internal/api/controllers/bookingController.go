@@ -477,11 +477,11 @@ func (bc *BookingController) sendStatusUpdateEmail(booking *models.Booking, oldS
     }
 
     statusColors := map[string]string{
-        "waiting":    "#eab308",
-        "confirmed":  "#22c55e", 
-        "completed":  "#94a3b8",
-        "cancelled":  "#ef4444", 
-        "rejected":   "#ef4444", 
+        "waiting":    "#b45309",
+        "confirmed":  "#0369a1", 
+        "completed":  "#15803d",
+        "cancelled":  "#bc2222", 
+        "rejected":   "#bc2222", 
     }
 
     statusNames := map[string]string{
