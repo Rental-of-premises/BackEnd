@@ -17,6 +17,7 @@ import (
 type UserController struct {
 	Rep          *repository.UserRepository
 	EmailService *email.EmailService
+    AH *api_scripts.AvatarHelper
 }
 
 func (uc *UserController) GetUser(res http.ResponseWriter, req *http.Request) {
@@ -100,7 +101,7 @@ func (uc *UserController) SignUp(res http.ResponseWriter, req *http.Request) {
 	}
 
 	go func() {
-		confirmURL := fmt.Sprintf("http://localhost:8080/auth/confirm-email?token=%s", token)
+		confirmURL := fmt.Sprintf("http://localhost:8080/api/auth/confirm-email?token=%s", token)
 
 		data := struct {
 			Name       string

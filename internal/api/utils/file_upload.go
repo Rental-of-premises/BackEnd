@@ -13,9 +13,11 @@ import (
 )
 
 const (
-    MaxFileSize = 5 << 20
+    MaxFileSize = 20 << 20
     UploadDir   = "./uploads/apartments"
-    //UploadAvatarsDir   = "./uploads/avatars"
+    UploadURL   = "/uploads/apartments"
+    UploadAvatarsDir   = "./uploads/avatars"
+    UploadAvatarURL   = "/uploads/avatars"
 )
 
 var AllowedExtensions = map[string]bool{
@@ -28,7 +30,7 @@ var AllowedExtensions = map[string]bool{
 
 func ValidateImage(fileHeader *multipart.FileHeader) error {
     if fileHeader.Size > MaxFileSize {
-        return fmt.Errorf("размер файла не должен превышать 5MB")
+        return fmt.Errorf("размер файла не должен превышать 20MB")
     }
 
     ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
@@ -74,7 +76,7 @@ func SaveUploadedFiles(files []*multipart.FileHeader, prefix string) ([]*models.
         	return nil, err
         }
 
-        imageURL := fmt.Sprintf("/%s/%s", UploadDir, fileName)
+        imageURL := fmt.Sprintf("%s/%s", UploadURL, fileName)
 
         uploadedImages = append(uploadedImages, &models.ApartmentImage{
             ImageURL: imageURL,
@@ -85,42 +87,42 @@ func SaveUploadedFiles(files []*multipart.FileHeader, prefix string) ([]*models.
     return uploadedImages, nil
 }
 
-// func SaveUploadedFileAvatar(fileHeader *multipart.FileHeader, prefix string) (*models.Avatar, error) {
+func SaveUploadedFileAvatar(fileHeader *multipart.FileHeader, prefix string) (*models.Avatar, error) {
 
-//     if err := os.MkdirAll(UploadAvatarsDir, 0755); err != nil {
-//         return nil, fmt.Errorf("ошибка создания папки для загрузок: %w", err)
-//     }
+    if err := os.MkdirAll(UploadAvatarsDir, 0755); err != nil {
+        return nil, fmt.Errorf("ошибка создания папки для загрузок: %w", err)
+    }
 
-//     var uploadedImage *models.Avatar
-//     if err := ValidateImage(fileHeader); err != nil {
-//         return nil, err
-//     }
+    if err := ValidateImage(fileHeader); err != nil {
+        return nil, err
+    }
 
-//     file, err := fileHeader.Open()
-//     if err != nil {
-//         return nil, err
-//     }
-//     defer file.Close()
+    file, err := fileHeader.Open()
+    timestamp := time.Now().Unix()
+    if err != nil {
+        return nil, err
+    }
+    defer file.Close()
 
-//     ext := filepath.Ext(fileHeader.Filename) 
+    ext := filepath.Ext(fileHeader.Filename) 
     
-//     fileName := fmt.Sprintf("%s_%d_%s", prefix, timestamp, ext)
-//     filePath := filepath.Join(UploadAvatarsDir, fileName)
+    fileName := fmt.Sprintf("%s_%d_%s", prefix, timestamp, ext)
+    filePath := filepath.Join(UploadAvatarsDir, fileName)
 
-//     dst, err := os.Create(filePath)
-//     if err != nil {
-//         return nil, err
-//     }
-//     defer dst.Close()
+    dst, err := os.Create(filePath)
+    if err != nil {
+        return nil, err
+    }
+    defer dst.Close()
 
-//     if _, err := io.Copy(dst, file); err != nil {
-//         return nil, err
-//     }
+    if _, err := io.Copy(dst, file); err != nil {
+        return nil, err
+    }
 
-//     imageURL := fmt.Sprintf("/%s/%s", UploadDir, fileName)
+    imageURL := fmt.Sprintf("/%s/%s", UploadAvatarURL, fileName)
 
-//     return &models.Avatar{ ImageURL: imageURL,}, nil
-// }
+    return &models.Avatar{ ImageURL: imageURL,}, nil
+}
 
 func DeleteFile(filePath string) error {
     if err := os.Remove(filePath); err != nil {

@@ -17,18 +17,18 @@ func (r *ApartmentImageRepository) Create(image *models.ApartmentImage) error {
     query := `
         INSERT INTO apartment_images (apartment_id, image_url, position)
         VALUES ($1, $2, $3)
-        RETURNING id
+        RETURNING id, created_at
     `
     return r.Db.QueryRow(query, 
         image.ApartmentID, 
         image.ImageURL, 
         image.Position,
-    ).Scan(&image.ID)
+    ).Scan(&image.ID, &image.CreatedAt)
 }
 
 func (r *ApartmentImageRepository) GetByApartmentID(apartmentID int64) ([]*models.ApartmentImage, error) {
     query := `
-        SELECT id, apartment_id, image_url, position
+        SELECT id, apartment_id, image_url, position, created_at
         FROM apartment_images
         WHERE apartment_id = $1
         ORDER BY position ASC
@@ -47,6 +47,7 @@ func (r *ApartmentImageRepository) GetByApartmentID(apartmentID int64) ([]*model
             &img.ApartmentID,
             &img.ImageURL,
             &img.Position,
+            &img.CreatedAt,
         )
         if err != nil {
             return nil, err
@@ -58,7 +59,7 @@ func (r *ApartmentImageRepository) GetByApartmentID(apartmentID int64) ([]*model
 
 func (r *ApartmentImageRepository) GetByID(id int64) (*models.ApartmentImage, error) {
     query := `
-        SELECT id, apartment_id, image_url, position
+        SELECT id, apartment_id, image_url, position, created_at
         FROM apartment_images
         WHERE id = $1
     `
@@ -68,6 +69,7 @@ func (r *ApartmentImageRepository) GetByID(id int64) (*models.ApartmentImage, er
         &img.ApartmentID,
         &img.ImageURL,
         &img.Position,
+        &img.CreatedAt,
     )
     if err == sql.ErrNoRows {
         return nil, nil
@@ -104,7 +106,7 @@ func (r *ApartmentImageRepository) UpdatePosition(id int64, position int) error 
 
 func (r *ApartmentImageRepository) GetMainImage(apartmentID int64) (*models.ApartmentImage, error) {
     query := `
-        SELECT id, apartment_id, image_url, position
+        SELECT id, apartment_id, image_url, position, created_at
         FROM apartment_images
         WHERE apartment_id = $1 AND position = 0
     `
@@ -114,6 +116,7 @@ func (r *ApartmentImageRepository) GetMainImage(apartmentID int64) (*models.Apar
         &img.ApartmentID,
         &img.ImageURL,
         &img.Position,
+        &img.CreatedAt,
     )
     if err == sql.ErrNoRows {
         return nil, nil

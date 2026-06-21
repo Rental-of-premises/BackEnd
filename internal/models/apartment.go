@@ -33,6 +33,7 @@ type ApartmentImage struct {
     ApartmentID int64     `json:"apartment_id"`
     ImageURL    string    `json:"image_url"`
     Position    int       `json:"position"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type Amenity struct {

@@ -59,8 +59,8 @@ func (ac *ApartmentController) GetApartment(res http.ResponseWriter, req *http.R
 }
 
 func (ac *ApartmentController) GetAllApartments(res http.ResponseWriter, req *http.Request) {
-	filter, err := api_scripts.ParseApartmentFilter(req)
 
+	filter, err := api_scripts.ParseApartmentFilter(req)
 	if err != nil {
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
@@ -72,25 +72,25 @@ func (ac *ApartmentController) GetAllApartments(res http.ResponseWriter, req *ht
 		return
 	}
 
-    type ApartmentWithRelations struct {
-        Apartment *models.Apartment          `json:"apartment"`
-        Images    []*models.ApartmentImage   `json:"images"`
-    }
+	var allImages [][]*models.ApartmentImage
+	for _, apartment := range apartments {
+		images, err := ac.IH.GetImagesByApartment(apartment)
+		if err != nil {
+			api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка получения изображений: "+err.Error())
+			return
+		}
+		allImages = append(allImages, images)
+	}
 
-    var response []ApartmentWithRelations
-    for _, apt := range apartments {
-        images, err := ac.IH.GetImagesByApartment(apt)
-        if err != nil {
-            images = []*models.ApartmentImage{}
-        }
+	response := struct {
+		Apartments []*models.Apartment        `json:"apartments"`
+		Images     [][]*models.ApartmentImage `json:"images"`
+	}{
+		Apartments: apartments,
+		Images:     allImages,
+	}
 
-        response = append(response, ApartmentWithRelations{
-            Apartment: apt,
-            Images:    images,
-        })
-    }
-
-    api_scripts.RespondJSON(res, http.StatusOK, response)
+	api_scripts.RespondJSON(res, http.StatusOK, response)
 }
 
 func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *http.Request) {
@@ -112,24 +112,23 @@ func (ac *ApartmentController) GetMyApartments(res http.ResponseWriter, req *htt
 		api_scripts.RespondError(res, http.StatusBadRequest, err.Error())
 		return
 	}
+	var allImages [][]*models.ApartmentImage
+	for _, apartment := range apartments {
+		images, err := ac.IH.GetImagesByApartment(apartment)
+		if err != nil {
+			api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка получения изображений: "+err.Error())
+			return
+		}
+		allImages = append(allImages, images)
+	}
 
-    type ApartmentWithRelations struct {
-        Apartment *models.Apartment          `json:"apartment"`
-        Images    []*models.ApartmentImage   `json:"images"`
-    }
-
-    var response []ApartmentWithRelations
-    for _, apt := range apartments {
-        images, err := ac.IH.GetImagesByApartment(apt)
-        if err != nil {
-            images = []*models.ApartmentImage{}
-        }
-
-        response = append(response, ApartmentWithRelations{
-            Apartment: apt,
-            Images:    images,
-        })
-    }
+	response := struct {
+		Apartments []*models.Apartment        `json:"apartments"`
+		Images     [][]*models.ApartmentImage `json:"images"`
+	}{
+		Apartments: apartments,
+		Images:     allImages,
+	}
 
 	api_scripts.RespondJSON(res, http.StatusOK, response)
 }
