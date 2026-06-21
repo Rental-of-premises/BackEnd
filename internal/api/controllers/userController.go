@@ -304,3 +304,37 @@ func (uc *UserController) UploadAvatar(res http.ResponseWriter, req *http.Reques
 		"image":   base64Data, 
 	})
 }
+
+func (uc *UserController) ChangeName(res http.ResponseWriter, req *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(req)
+	if !ok {
+		api_scripts.RespondError(res, http.StatusUnauthorized, "Не авторизован")
+		return
+	}
+
+	var requestBody struct {
+		Name    string `json:"name"`
+	}
+
+	err := json.NewDecoder(req.Body).Decode(&requestBody)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusBadRequest, "Неверный JSON")
+		return
+	}
+
+	user := &models.User{
+		ID:         userID,
+		Name:       requestBody.Name,
+	}
+
+	err = uc.Rep.Update(user)
+	if err != nil {
+		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка изменения данных пользователя")
+		return
+	}
+
+	api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
+		"id": user.ID,
+		"name": user.Name,
+	})
+}
