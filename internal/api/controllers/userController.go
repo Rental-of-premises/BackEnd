@@ -39,11 +39,7 @@ func (uc *UserController) GetUser(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	avatar, err := uc.AH.GetAvatarByUser(user)
-	if err != nil {
-		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка получения аватарки: "+err.Error())
-		return
-	}
+	avatar, _ := uc.AH.GetAvatarByUser(user)
 
 	user.Password = ""
 	response := struct {
