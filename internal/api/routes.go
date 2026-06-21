@@ -39,7 +39,6 @@ func CreateAndRunRoutes() {
 				w.WriteHeader(http.StatusOK)
 				return
 			}
-<<<<<<< HEAD
 
 			http.StripPrefix("/uploads/", fileServer).ServeHTTP(w, r)
 		}),
@@ -63,12 +62,10 @@ func CreateAndRunRoutes() {
 
 	emailService := email.NewEmailService(cfg)
 	iRepo := repository.GetApartmentImageRepository()
-	aRepo := repository.GetAvatarRepository()
 
 	userController := &api_controllers.UserController{
 		Rep:          repository.GetUserRepository(),
 		EmailService: emailService,
-		AH:           api_scripts.NewAvatarHelper(aRepo),
 	}
 
 	apartmentController := &api_controllers.ApartmentController{
@@ -87,7 +84,7 @@ func CreateAndRunRoutes() {
 		BookingRepo:   repository.GetBookingRepository(),
 	}
 
-    // ========== ПУБЛИЧНЫЕ МАРШРУТЫ (без токена) ==========
+	// ========== ПУБЛИЧНЫЕ МАРШРУТЫ ==========
     apiRouter.HandleFunc("/users/{id}", userController.GetUser).Methods("GET", "OPTIONS")
     apiRouter.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST", "OPTIONS")
     apiRouter.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST", "OPTIONS")
@@ -102,82 +99,6 @@ func CreateAndRunRoutes() {
 
     apiRouter.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET", "OPTIONS")
     apiRouter.HandleFunc("/apartments/{id}/calendar", bookingController.GetBookingsByApartment).Methods("GET", "OPTIONS")
-
-    // ========== ЗАЩИЩЕННЫЕ МАРШРУТЫ (с проверкой токена) ==========
-    protected := mainRouter.PathPrefix("/api").Subrouter()
-    protected.Use(middleware.AuthMiddleware)
-
-    protected.HandleFunc("/auth/logout", userController.LogOut).Methods("POST", "OPTIONS")
-    protected.HandleFunc("/auth/delete", userController.DeleteAccount).Methods("DELETE", "OPTIONS")
-    // protected.HandleFunc("/api/account/settings/profile/avatar", userController.ChangeAvatar).Methods("PATCH", "OPTIONS")
-    // protected.HandleFunc("/api/account/settings/profile/name", userController.ChangeName).Methods("PATCH", "OPTIONS")
-    // protected.HandleFunc("/api/account/settings/security/password", userController.ChangePassword).Methods("PATCH", "OPTIONS")
-=======
-
-			http.StripPrefix("/uploads/", fileServer).ServeHTTP(w, r)
-		}),
-	)
-
-	// ===== API РОУТЫ =====
-	apiRouter := mainRouter.PathPrefix("/api").Subrouter()
-	apiRouter.Use(middleware.CORSMiddleware)
-	apiRouter.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			next.ServeHTTP(w, req)
-		})
-	})
-
-	cfg := config.Load()
-	db := repository.GetUserRepository().Db
-	if db == nil {
-		log.Fatal("❌ Репозиторий user не инициализирован! БД не подключена.")
-	}
-
-	emailService := email.NewEmailService(cfg)
-	iRepo := repository.GetApartmentImageRepository()
-
-	userController := &api_controllers.UserController{
-		Rep:          repository.GetUserRepository(),
-		EmailService: emailService,
-	}
->>>>>>> main
-
-	apartmentController := &api_controllers.ApartmentController{
-		Rep: repository.GetApartmentRepository(),
-		IH:  api_scripts.NewImageHelper(iRepo),
-	}
-
-	bookingController := &api_controllers.BookingController{
-		Rep:           repository.GetBookingRepository(),
-		ApartmentRepo: repository.GetApartmentRepository(),
-	}
-
-	reviewController := &api_controllers.ReviewController{
-		Rep:           repository.GetReviewRepository(),
-		ApartmentRepo: repository.GetApartmentRepository(),
-		BookingRepo:   repository.GetBookingRepository(),
-	}
-
-<<<<<<< HEAD
-    port := config.GetSingletonConfig().ServerPort
-    log.Printf("Server starting on port %s", port)
-    log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), mainRouter))
-}
-=======
-	// ========== ПУБЛИЧНЫЕ МАРШРУТЫ ==========
-	apiRouter.HandleFunc("/users/{id}", userController.GetUser).Methods("GET", "OPTIONS")
-	apiRouter.HandleFunc("/auth/sign-up", userController.SignUp).Methods("POST", "OPTIONS")
-	apiRouter.HandleFunc("/auth/sign-in", userController.SignIn).Methods("POST", "OPTIONS")
-	apiRouter.HandleFunc("/auth/confirm-email", userController.ConfirmEmail).Methods("GET", "OPTIONS")
-
-	apiRouter.HandleFunc("/apartments/{id}", apartmentController.GetApartment).Methods("GET", "OPTIONS")
-	apiRouter.HandleFunc("/apartments", apartmentController.GetAllApartments).Methods("GET", "OPTIONS")
-
-	apiRouter.HandleFunc("/apartments/{id}/reviews", reviewController.GetAllReviews).Methods("GET", "OPTIONS")
-
-	apiRouter.HandleFunc("/bookings/{id}", bookingController.GetBooking).Methods("GET", "OPTIONS")
-	apiRouter.HandleFunc("/apartments/{id}/calendar", bookingController.GetBookingsByApartment).Methods("GET", "OPTIONS")
 
 	// ========== ЗАЩИЩЕННЫЕ МАРШРУТЫ ==========
 	protectedRouter := mainRouter.PathPrefix("/api").Subrouter()
@@ -209,4 +130,3 @@ func CreateAndRunRoutes() {
 	log.Printf("🚀 Server starting on port %s", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), mainRouter))
 }
->>>>>>> main

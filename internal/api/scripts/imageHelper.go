@@ -17,15 +17,9 @@ type ImageHelper struct {
 }
 
 func NewImageHelper(imageRepo *repository.ApartmentImageRepository) *ImageHelper {
-<<<<<<< HEAD
     return &ImageHelper{
         ImageRepo:  imageRepo,
     }
-=======
-	return &ImageHelper{
-		ImageRepo: imageRepo,
-	}
->>>>>>> main
 }
 
 func (h *ImageHelper) ImageRepoHandleImages(req *http.Request, apartmentID int64) ([]string, []int64, error) {
@@ -117,23 +111,11 @@ func (h *ImageHelper) DeleteAllImages(apartmentID int64) error {
 	log.Printf("📸 Найдено %d изображений для удаления", len(images))
 
 	for _, img := range images {
-<<<<<<< HEAD
-    if err := utils.DeleteFile(img.ImageURL); err != nil {
-        log.Printf("⚠️ Ошибка удаления файла %s: %v", img.ImageURL, err)
-        // НЕ ПРЕРЫВАЕМ - логируем и продолжаем
-    }
-	}
-
-=======
-		log.Printf("🗑️ Удаляем файл: %s", img.ImageURL)
-		// Удаляем физический файл
 		if err := utils.DeleteFile(img.ImageURL); err != nil {
 			log.Printf("⚠️ Ошибка удаления файла %s: %v", img.ImageURL, err)
 		}
 	}
 
-	// Удаляем записи из БД
->>>>>>> main
 	if err := h.ImageRepo.DeleteByApartmentID(apartmentID); err != nil {
 		log.Printf("⚠️ Ошибка удаления записей из БД: %v", err)
 		return err

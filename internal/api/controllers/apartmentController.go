@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
 
 	"rent/internal/api/middleware"
+	"rent/internal/api/utils"
 	api_scripts "rent/internal/api/scripts"
 	"rent/internal/models"
 	"rent/internal/storage/repository"

@@ -233,21 +233,26 @@ func (r *BookingRepository) GetByApartment(apartmentID int64, limit, offset int)
 
 func (r *BookingRepository) CheckAvailability(apartmentID int64, timeFrom, timeTo time.Time, userID int64) (bool, error) {
 	query := `
-        SELECT COUNT(*), seller_id
-        FROM booking
-        WHERE apartment_id = $1
-        AND status NOT IN ('cancelled', 'rejected')
+        SELECT COUNT(*), a.seller_id
+        FROM booking b
+        JOIN apartments a ON b.apartment_id = a.id
+        WHERE b.apartment_id = $1
+        AND b.status NOT IN ('cancelled', 'rejected')
         AND (
-            (time_from <= $2 AND time_to > $2) OR
-            (time_from < $3 AND time_to >= $3) OR
-            (time_from >= $2 AND time_to <= $3)
+            (b.time_from <= $2 AND b.time_to > $2) OR
+            (b.time_from < $3 AND b.time_to >= $3) OR
+            (b.time_from >= $2 AND b.time_to <= $3)
         )
+        GROUP BY a.seller_id
     `
 
 	var count int
 	var sellerID int64
 	err := r.Db.QueryRow(query, apartmentID, timeFrom, timeTo).Scan(&count, &sellerID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return true, nil
+		}
 		return false, err
 	}
 	return count == 0 && sellerID != userID, nil

@@ -13,16 +13,12 @@ import (
 )
 
 const (
-<<<<<<< HEAD
     MaxFileSize = 20 << 20
     UploadDir   = "./uploads/apartments"
     UploadURL   = "/uploads/apartments"
     UploadAvatarsDir   = "./uploads/avatars"
     UploadAvatarURL   = "/uploads/avatars"
-=======
-	MaxFileSize = 20 << 20 // 20 MB
-	UploadDir   = "./uploads/apartments"
->>>>>>> main
+
 )
 
 var AllowedExtensions = map[string]bool{
@@ -34,15 +30,9 @@ var AllowedExtensions = map[string]bool{
 }
 
 func ValidateImage(fileHeader *multipart.FileHeader) error {
-<<<<<<< HEAD
     if fileHeader.Size > MaxFileSize {
         return fmt.Errorf("размер файла не должен превышать 20MB")
     }
-=======
-	if fileHeader.Size > MaxFileSize {
-		return fmt.Errorf("размер файла не должен превышать 20MB")
-	}
->>>>>>> main
 
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	if !AllowedExtensions[ext] {
@@ -86,11 +76,7 @@ func SaveUploadedFiles(files []*multipart.FileHeader, prefix string) ([]*models.
 			return nil, err
 		}
 
-<<<<<<< HEAD
         imageURL := fmt.Sprintf("%s/%s", UploadURL, fileName)
-=======
-		imageURL := fmt.Sprintf("/uploads/apartments/%s", fileName)
->>>>>>> main
 
 		uploadedImages = append(uploadedImages, &models.ApartmentImage{
 			ImageURL: imageURL,

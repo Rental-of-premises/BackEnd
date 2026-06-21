@@ -91,7 +91,6 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 	}
 	filter.Offset = &offset
 
-<<<<<<< HEAD
 	amenityIDs := r.URL.Query()["amenities"]
 	if len(amenityIDs) > 0 {
 		for _, idStr := range amenityIDs {
@@ -102,8 +101,6 @@ func ParseApartmentFilter(r *http.Request) (*models.ApartmentFilter, error) {
 		}
 	}
 	
-=======
->>>>>>> main
 	return filter, nil
 }
 
