@@ -234,24 +234,24 @@ func (uc *UserController) DeleteAccount(res http.ResponseWriter, req *http.Reque
 func (uc *UserController) ConfirmEmail(res http.ResponseWriter, req *http.Request) {
 	token := req.URL.Query().Get("token")
 	if token == "" {
-		api_scripts.RespondError(res, http.StatusBadRequest, "Токен не указан")
+		http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=error&message=Токен не указан", http.StatusFound)
 		return
 	}
 
 	userID, err := uc.Rep.ActivateUser(token)
 	if err != nil {
-		api_scripts.RespondError(res, http.StatusInternalServerError, "Ошибка активации")
+		http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=error&message=Ошибка активации", http.StatusFound)
 		return
 	}
 	if userID == 0 {
-		api_scripts.RespondError(res, http.StatusNotFound, "Неверный или просроченный токен")
+		http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=error&message=Неверный или просроченный токен", http.StatusFound)
 		return
 	}
 
-	api_scripts.RespondJSON(res, http.StatusOK, map[string]interface{}{
-		"message": "Email успешно подтверждён! Теперь вы можете войти.",
-	})
+	http.Redirect(res, req, "https://team3.verstack.ru/confirm-email?status=success", http.StatusFound)
 }
+
+
 func (uc *UserController) UploadAvatar(res http.ResponseWriter, req *http.Request) {
 	userID, ok := middleware.GetUserIDFromContext(req)
 	if !ok {
