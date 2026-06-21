@@ -323,3 +323,13 @@ func (r *BookingRepository) CompletePastBookings() error {
 
 	return nil
 }
+
+func (r *BookingRepository) GetUserByID(id int64) (*models.User, error) {
+    query := `SELECT id, name, email FROM users WHERE id = $1`
+    var user models.User
+    err := r.Db.QueryRow(query, id).Scan(&user.ID, &user.Name, &user.Email)
+    if err != nil {
+        return nil, err
+    }
+    return &user, nil
+}

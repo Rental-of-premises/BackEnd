@@ -5,17 +5,20 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"log"
 
 
 	"rent/internal/api/middleware"
 	api_scripts "rent/internal/api/scripts"
 	"rent/internal/models"
+	"rent/internal/email"
 	"rent/internal/storage/repository"
 )
 
 type BookingController struct {
-	Rep           *repository.BookingRepository
-	ApartmentRepo *repository.ApartmentRepository
+    Rep           *repository.BookingRepository
+    ApartmentRepo *repository.ApartmentRepository
+    EmailService  *email.EmailService
 }
 
 func (bc *BookingController) GetBooking(res http.ResponseWriter, req *http.Request) {
@@ -243,6 +246,34 @@ func (bc *BookingController) CreateBooking(res http.ResponseWriter, req *http.Re
 		api_scripts.RespondError(res, http.StatusBadRequest, "Ошибка при создании брони: " + err.Error())
 		return
 	}
+
+	apartment, err := bc.ApartmentRepo.GetByID(booking.ApartmentID)
+	if err == nil {
+		owner, err := bc.Rep.GetUserByID(apartment.SellerID)
+		if err == nil && owner != nil {
+			go func() {
+				data := struct {
+					OwnerName     string
+					ApartmentName string
+					TimeFrom      string
+					TimeTo        string
+				}{
+					OwnerName:     owner.Name,
+					ApartmentName: apartment.Name,
+					TimeFrom:      booking.TimeFrom.Format("02.01.2006 15:04"),
+					TimeTo:        booking.TimeTo.Format("02.01.2006 15:04"),
+				}
+
+				body, err := bc.EmailService.RenderTemplate("owner_booking_notification.html", data)
+				if err != nil {
+					log.Printf("❌ Ошибка рендеринга шаблона: %v", err)
+					return
+				}
+
+				bc.EmailService.SendEmail(owner.Email, "Новое бронирование!", body)
+			}()
+		}
+}
 
 	api_scripts.RespondJSON(res, http.StatusCreated, map[string]interface{}{
 		"id": booking.ID,
