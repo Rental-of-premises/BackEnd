@@ -78,6 +78,7 @@ func CreateAndRunRoutes() {
 	bookingController := &api_controllers.BookingController{
 		Rep:           repository.GetBookingRepository(),
 		ApartmentRepo: repository.GetApartmentRepository(),
+        EmailService:  emailService,
 	}
 
 	reviewController := &api_controllers.ReviewController{
